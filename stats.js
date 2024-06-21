@@ -55,7 +55,10 @@ function highRentBurden(tract){
     // tract.hasData = true;
     // return tract.rentData2020.obj[0]/tract.rentData2000.obj[0];
     // console.log(tract.rentData2020.obj['10 to 14 percent']);
-    return tract.rentData2020.obj['10 to 14 percent']/tract.rentData2000.obj['10 to 14 percent'];
+    let val = tract.rentData2020.obj['10 to 14 percent']/tract.rentData2000.obj['10 to 14 percent'];
+    if(val == NaN)
+        val = 0;
+    return val;
 }
 
 function getTopNTracts(n,func){
