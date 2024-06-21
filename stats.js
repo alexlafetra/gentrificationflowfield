@@ -47,26 +47,53 @@ function ratioAsianChange(tract){
     return (tract.raceData2020.obj.Asian/tract.raceData2020.obj.Total) / (tract.raceData2000.obj.Asian/tract.raceData2000.obj.Total);
 }
 
-function highRentBurden(tract){
+function rentBurden(tract,field){
     if(tract.rentData2000 == undefined || tract.rentData2020 == undefined){
         return 0;
     }
-    // console.log(tract);
-    // tract.hasData = true;
-    // return tract.rentData2020.obj[0]/tract.rentData2000.obj[0];
-    // console.log(tract.rentData2020.obj['10 to 14 percent']);
-    let val = tract.rentData2020.obj['10 to 14 percent']/tract.rentData2000.obj['10 to 14 percent'];
+    let val = tract.rentData2020.obj[field]-tract.rentData2000.obj[field];
     if(val == NaN)
-        val = 0;
+        return 0;
+    if(val == Infinity)
+        return 0;
+    if(!val)
+        return 0;
     return val;
+}
+function rentBurdenLessThan10(tract){
+    return rentBurden(tract,'Less than 10 percent');
+}
+function rentBurden10to14(tract){
+    return rentBurden(tract,'10 to 14 percent');
+}
+function rentBurden15to19(tract){
+    return rentBurden(tract,'15 to 19 percent');
+}
+function rentBurden20to24(tract){
+    return rentBurden(tract,'20 to 24 percent');
+}
+function rentBurden25to29(tract){
+    return rentBurden(tract,'25 to 29 percent');
+}
+function rentBurden30to34(tract){
+    return rentBurden(tract,'30 to 34 percent');
+}
+function rentBurden35to39(tract){
+    return rentBurden(tract,'35 to 39 percent');
+}
+function rentBurden40to49(tract){
+    return rentBurden(tract,'40 to 49 percent');
+}
+function rentBurden50orMore(tract){
+    return rentBurden(tract,'50 percent or more');
 }
 
 function getTopNTracts(n,func){
     let vals = bayTracts.toSorted((a,b) => {
-        if(!a.hasData || a.raceData2020 == undefined || a.raceData2000 == undefined){
+        if(!a.hasData || a.raceData2020 == undefined || a.raceData2000 == undefined || a.rentData2000 == undefined || a.rentData2020 == undefined){
             return 0;
         }
-        else if(!b.hasData || b.raceData2020 == undefined || b.raceData2000 == undefined){
+        else if(!b.hasData || b.raceData2020 == undefined || b.raceData2000 == undefined || b.rentData2000 == undefined || b.rentData2020 == undefined){
             return 0;
         }
 

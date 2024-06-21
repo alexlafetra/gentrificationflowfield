@@ -31,6 +31,7 @@ let presets;
 
 //20 is a good base number
 let NUMBER_OF_ATTRACTORS = 300;
+// let NUMBER_OF_ATTRACTORS = 20;
 const NUMBER_OF_FIELDS = 1;
 
 //controls whether or not the sim will load with prerendered data/choropleths
@@ -136,13 +137,16 @@ function setup_DevMode(){
                                             "P<sub>Black 2000</sub> / P<sub>Total 2000</sub> - P<sub>Black 2020</sub> / P<sub>Total 2020</sub>",proportionalBlackChange);
     asianProportionComparisonPreset = new DemographicVis("Change In Proportion of Population Identifying as Asian",
                                             "P<sub>Asian 2000</sub> / P<sub>Total 2000</sub> - P<sub>Asian 2020</sub> / P<sub>Total 2020</sub>",proportionalAsianChange);
-    whiteRatioPreset = new DemographicVis("Ratio of Proportions of Population Identifying as White",
-                                            "(P<sub>White 2000</sub> / P<sub>Total 2000</sub>) / (P<sub>White 2020</sub> / P<sub>Total 2020</sub>)",ratioWhiteChange);
-    blackRatioPreset = new DemographicVis("Ratio of Proportions of Population Identifying as Black",
-                                            "(P<sub>Black 2000</sub> / P<sub>Total 2000</sub>) / (P<sub>Black 2020</sub> / P<sub>Total 2020</sub>)",ratioBlackChange);
-    asianRatioPreset = new DemographicVis("Ratio of Proportions of Population Identifying as Asian",
-                                            "(P<sub>Asian 2000</sub> / P<sub>Total 2000</sub>) / (P<sub>Asian 2020</sub> / P<sub>Total 2020</sub>)",ratioAsianChange);
-    rentBurdenPreset = new DemographicVis("Renters spending more than 50% of monthly income on rent in 2000","afeafeaoin",highRentBurden);
+    rentBurden1= new DemographicVis("Renters spending less than 10% of monthly income","idk",rentBurdenLessThan10);
+    rentBurden2= new DemographicVis("Renters spending 10-14% of monthly income","idk",rentBurden10to14);
+    rentBurden3= new DemographicVis("Renters spending 15-19% of monthly income","idk",rentBurden15to19);
+    rentBurden4= new DemographicVis("Renters spending 20-24% of monthly income","idk",rentBurden20to24);
+    rentBurden5= new DemographicVis("Renters spending 25-29% of monthly income","idk",rentBurden25to29);
+    rentBurden6= new DemographicVis("Renters spending 30-34% of monthly income","idk",rentBurden30to34);
+    rentBurden7= new DemographicVis("Renters spending 35-39% of monthly income","idk",rentBurden35to39);
+    rentBurden8= new DemographicVis("Renters spending 40-49% of monthly income","idk",rentBurden40to49);
+    rentBurden9= new DemographicVis("Renters spending more than 50% of monthly income","idk",rentBurden50orMore);
+
     presets = [
         whiteProportionComparisonPreset,
         blackProportionComparisonPreset,
@@ -150,10 +154,15 @@ function setup_DevMode(){
         whiteComparisonPreset,
         blackComparisonPreset,
         asianComparisonPreset,
-        whiteRatioPreset,
-        blackRatioPreset,
-        asianRatioPreset,
-        rentBurdenPreset
+        rentBurden1,
+        rentBurden2,
+        rentBurden3,
+        rentBurden4,
+        rentBurden5,
+        rentBurden6,
+        rentBurden7,
+        rentBurden8,
+        rentBurden9
     ];
 
     //parsing data and attaching it to tract geometry
@@ -174,7 +183,7 @@ function setup_DevMode(){
     tractOutlines = createFramebuffer({width:width,height:height});
     tractOutlines.begin();
     strokeWeight(1);
-    renderTractOutlines(geoOffset,color(255));
+    renderTractOutlines(geoOffset,color(100,10));
     tractOutlines.end();
 
     holcTexture = createFramebuffer(width,height);
@@ -281,5 +290,6 @@ function draw(){
     if(flowField.isActive){
         flowField.updateParticles();
         flowField.renderGL();
+        flowField.renderData();
     }
 }

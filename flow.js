@@ -281,7 +281,6 @@ class FlowField{
     logFlowFieldData(presetName){
         let a = getSignificantPoints(NUMBER_OF_ATTRACTORS,presets[this.presetIndex].demographicFunction);
         let r = getLeastSignificantPoints(NUMBER_OF_ATTRACTORS,presets[this.presetIndex].demographicFunction);
-        // console.log();
         let string = presetName + "Attractors = "+JSON.stringify(a)+"\n"+presetName+"Repulsors = "+JSON.stringify(r)+";\n";
         console.log(string);
         return string;
@@ -312,8 +311,8 @@ class FlowField{
         }
         let minA = a[a.length-1].strength;
 
-        let overallMax = max([maxA,maxR,minA,minR]);
-        let overallMin = min([maxA,maxR,minA,minR]);
+        // let overallMax = max([maxA,maxR,minA,minR]);
+        // let overallMin = min([maxA,maxR,minA,minR]);
 
         for(let point of a){
             if(point.strength == Infinity)
