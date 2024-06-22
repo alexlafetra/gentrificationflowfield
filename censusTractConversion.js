@@ -1,21 +1,20 @@
-function loadData(){
+function loadCensusCSVData(){
     tractGeometry = loadJSON("data/geographic/CA_Tracts.geojson");
     oakHolcTracts = loadJSON("data/geographic/oakland_HOLC.json");
     sfHolcTracts = loadJSON("data/geographic/SF_HOLC.json");
     sjHolcTracts = loadJSON("data/geographic/SJ_HOLC.json");
 
     // raceData2000 = loadTable('data/Census/CONVERTED_Tracts_by_Race_2000.csv','csv','header');
+    raceData2000 = loadTable('data/Census/Tracts_by_Race_2000.csv','csv','header');
     raceData2020 = loadTable('data/Census/Tracts_by_Race_2020.csv','csv','header');
 
-    rentData2000 = loadTable('data/Census/CONVERTED_Tracts_by_Rent_2000.csv','csv','header');
+    // rentData2000 = loadTable('data/Census/CONVERTED_Tracts_by_Rent_2000.csv','csv','header');
+    rentData2000 = loadTable('data/Census/Tracts_by_Rent_2000.csv','csv','header');
     rentData2020 = loadTable('data/Census/Tracts_by_Rent_2020.csv','csv','header');
 
-
-    //Only need these for converting
-    raceData2000 = loadTable('data/Census/Tracts_by_Race_2000.csv','csv','header');
-
-    substantiallyChanged2000 = loadTable('data/Census/Substantially_Changed_2000.csv');
-    substantiallyChanged2010 = loadTable('data/Census/Substantially_Changed_2010.csv');
+    //These vv turned out to be unhelpful! They're not complete, idk what counts as "substantially changed" but it's not enough
+    // substantiallyChanged2000 = loadTable('data/Census/Substantially_Changed_2000.csv');
+    // substantiallyChanged2010 = loadTable('data/Census/Substantially_Changed_2010.csv');
     conversions2000to2010 = loadTable('data/Census/2010_to_2000.csv','csv','header');
     conversions2010to2020 = loadTable('data/Census/2020_to_2010.csv','csv','header');
 }
@@ -34,11 +33,10 @@ function cleanCensusData(){
     rentData2020 = filterNonBayAreaCounties(rentData2020);
 
     //Converting 2000's data into 2020 data
-    raceData2000 = convertTracts(raceData2000,conversions2000to2010,substantiallyChanged2000,'GEOID00','GEOID10','2000',false);//GEOID's are stored under this name
-    raceData2000 = convertTracts(raceData2000,conversions2010to2020,substantiallyChanged2010,'GEOID_TRACT_10','GEOID_TRACT_20','Converted 2010',true);//GEOID's are stored in column 8, here (0 indexed)
-
-    rentData2000 = convertTracts(rentData2000,conversions2000to2010,substantiallyChanged2000,'GEOID00','GEOID10','2000',true);//GEOID's are stored under this name
-    rentData2000 = convertTracts(rentData2000,conversions2010to2020,substantiallyChanged2010,'GEOID_TRACT_10','GEOID_TRACT_20','Converted 2010',true);//GEOID's are stored under this name
+    raceData2000 = convertTracts(raceData2000,conversions2000to2010,'GEOID00','GEOID10','2000',true);//GEOID's are stored under this name
+    raceData2000 = convertTracts(raceData2000,conversions2010to2020,'GEOID_TRACT_10','GEOID_TRACT_20','Converted 2010',true);//GEOID's are stored in column 8, here (0 indexed)
+    rentData2000 = convertTracts(rentData2000,conversions2000to2010,'GEOID00','GEOID10','2000',true);//GEOID's are stored under this name
+    rentData2000 = convertTracts(rentData2000,conversions2010to2020,'GEOID_TRACT_10','GEOID_TRACT_20','Converted 2010',true);//GEOID's are stored under this name
 }
 
 /*
@@ -47,7 +45,7 @@ Ideas for better:
 store tract data as new object data, like "equivalent2010Data:[tract:001,pop:0001]"
 then, after all the tracts are processed, decide how to compare these data to the 2020 data
 */
-function convertTracts(dataIn,conversionSheet,substantiallyChangedTracts,oldGeoIDColumnName,newGeoIDColumnName,whichYear,silently){
+function convertTracts(dataIn,conversionSheet,oldGeoIDColumnName,newGeoIDColumnName,whichYear,silently){
     //New array of p5.TableRow objects to store the data in
     let convertedData = new p5.Table();
     convertedData.columns = dataIn.columns;

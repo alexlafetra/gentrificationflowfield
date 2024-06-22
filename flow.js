@@ -33,19 +33,18 @@ function fillFBOwithRandom(fbo,scale,seed){
 class FlowField{
     constructor(mask,presetIndex,map,c){
         //Parameters
-        this.particleCount = 20000;
+        this.particleCount = 40000;
         this.trailDecayValue = 0.04;
-        this.pointSize = 1.4;
+        this.pointSize = mainCanvas.width/1000;
         this.opacity = 200;
         this.particleAgeLimit = 150;
-        this.velDampValue = 0.001;
+        this.velDampValue = 0.004;
         this.forceStrength = 0.05;
 
         this.randomAmount = 0.1;
         this.repulsionStrength = 3.0;
         this.attractionStrength = 3.0;
 
-        this.x = 0;
         this.size = height;
 
         this.presetIndex = presetIndex;
@@ -53,10 +52,13 @@ class FlowField{
         this.maskParticles = true;
 
         this.isActive = true;
+        this.showingData = false;
+        this.renderAs = true;//render attractors
+        this.renderRs = true;//render repulsors
 
         //data
-        this.attractors = attractors;
-        this.repulsors = repulsors;
+        this.attractorArray = attractors;
+        this.repulsorArray = repulsors;
 
         //Shaders
         this.updatePositionShader = createShader(updatePositionVert,updatePositionFrag);
@@ -84,12 +86,62 @@ class FlowField{
         //set up the field
         this.resetParticles();
     }
+    logClosestAttractorToMouse(){
+        let mouseVec = createVector(mouseX,mouseY);
+        let minDist = 1000000;
+        let closest = null;
+        for(let a of this.attractorObjects){
+            a.clicked = false;
+            let aVec = createVector((a.x-0.5)*mainCanvas.width,(a.y-0.5)*mainCanvas.height)
+            let dist = p5.Vector.dist(aVec,mouseVec);
+            if(dist<minDist){
+                minDist = dist;
+                closest = a;
+            }
+        }
+        closest.clicked = true;
+        // console.log(closest);
+    }
+    renderAttractors(){
+        for(let i = 0; i<this.attractorArray.length; i+=3){
+            const x = (this.attractorArray[i]-0.5)*mainCanvas.width;
+            const y = (this.attractorArray[i+1]-0.5)*mainCanvas.height;
+            let size = map(this.attractorArray[i+2],this.attractorArray[this.attractorArray.length-1],this.attractorArray[2],1,10);//scaling size based on the min/max size of attractors
+            const alpha = map(size,1,10,0,255);
+            if(this.attractorObjects[i]){
+                if(this.attractorObjects[i].clicked){
+                    fill(255,255,0);
+                    size = 20;
+                }
+                else{
+                    fill(this.attractionColor,alpha);
+                }
+            }
+            else
+                fill(this.attractionColor,alpha);
+            noStroke();
+            ellipse(x,y,size,size);
+        }
+    }
+    renderRepulsors(){
+        for(let i = 0; i<this.repulsorArray.length; i+=3){
+            const x = (this.repulsorArray[i]-0.5)*mainCanvas.width;
+            const y = (this.repulsorArray[i+1]-0.5)*mainCanvas.height;
+            const size = map(this.repulsorArray[i+2],this.repulsorArray[this.repulsorArray.length-1],this.repulsorArray[2],10,1);//scaling size
+            const alpha = map(size,1,10,0,255);
+            fill(this.repulsionColor,alpha);
+            noStroke();
+            ellipse(x,y,size,size);
+        }
+    }
     initGui(){
         let gui = document.getElementById("gui");
         if(!gui){
             gui = createDiv();
             gui.id("gui");
         }
+        gui.textContent = '';//clear it out;
+
         this.controlPanel = createDiv();
         this.controlPanel.addClass("flowfield_controls");
 
@@ -116,9 +168,11 @@ class FlowField{
         this.maskParticlesCheckbox = new GuiCheckbox("Mask Off Oceans",this.maskParticles,this.controlPanel);
         this.showTractsCheckbox = new GuiCheckbox("Show Tract Boundaries",false,this.controlPanel);
         this.showFlowCheckbox = new GuiCheckbox("Show Flow Field",false,this.controlPanel);
-        this.showMapCheckbox = new GuiCheckbox("Show Map",false,this.controlPanel);
+        // this.showMapCheckbox = new GuiCheckbox("Show Map",false,this.controlPanel);
         this.showHOLCCheckbox = new GuiCheckbox("Show HOLC Tracts",false,this.controlPanel);
         this.activeCheckbox = new GuiCheckbox("Simulate",this.isActive,this.controlPanel);
+        this.showDataCheckbox = new GuiCheckbox("Show Data Textures",this.showingData,this.controlPanel);
+
         this.flowFieldSelector = new FlowFieldSelector(presets,this.presetIndex,"Demographic Data",true,this.controlPanel);
        
         this.controlPanel.parent(gui);
@@ -133,6 +187,7 @@ class FlowField{
         this.maskParticles = this.maskParticlesCheckbox.value();
         this.isActive = this.activeCheckbox.value();
         this.randomAmount = this.randomValueSlider.value();
+        this.showingData = this.showDataCheckbox.value();
 
         let needToUpdateFF = false;
         if(this.repulsionStrength != this.repulsionStrengthSlider.value() && !mouseIsPressed){
@@ -160,8 +215,8 @@ class FlowField{
         shader(this.flowShader);
         //just a note: attractors and repulsors are FLAT arrays of x,y,strength values
         //Which means they're just a 1x(nx3) flat vector, not an nx3 multidimensional vector
-        this.flowShader.setUniform('uAttractors',this.attractors);
-        this.flowShader.setUniform('uRepulsors',this.repulsors);
+        this.flowShader.setUniform('uAttractors',this.attractorArray);
+        this.flowShader.setUniform('uRepulsors',this.repulsorArray);
         this.flowShader.setUniform('uAttractionStrength',this.attractionStrength);
         this.flowShader.setUniform('uRepulsionStrength',this.repulsionStrength);
         rect(-this.flowFieldTexture.width/2,-this.flowFieldTexture.height/2,this.flowFieldTexture.width,this.flowFieldTexture.height);
@@ -274,9 +329,9 @@ class FlowField{
         //you need to make sure these don't return any points with infinite strength!
         //This can happen where there are '0' people in a tract and you're dividing by that pop number
         //And it messes up the relative scaling
-        let a = getSignificantPoints(n,presets[this.presetIndex].demographicFunction);
-        let r = getLeastSignificantPoints(n,presets[this.presetIndex].demographicFunction);
-        this.calcPoints(a,r);
+        this.attractorObjects = getSignificantPoints(n,presets[this.presetIndex].demographicFunction);
+        this.repulsorObjects = getLeastSignificantPoints(n,presets[this.presetIndex].demographicFunction);
+        this.calcPoints(this.attractorObjects,this.repulsorObjects);
     }
     logFlowFieldData(presetName){
         let a = getSignificantPoints(NUMBER_OF_ATTRACTORS,presets[this.presetIndex].demographicFunction);
@@ -291,12 +346,11 @@ class FlowField{
         saveCanvas(this.flowFieldTexture,"flowField.png","png");
     }
     setPresetAttractors(){
-        console.log(presets);
         this.calcPoints(presets[this.presetIndex].attractors,presets[this.presetIndex].repulsors);
     }
     calcPoints(a,r){
-        this.attractors = [];
-        this.repulsors = [];
+        this.attractorArray = [];
+        this.repulsorArray = [];
 
         let minR = r[0].strength;
         let maxR = r[r.length-1].strength;
@@ -317,19 +371,19 @@ class FlowField{
         for(let point of a){
             if(point.strength == Infinity)
                 point.strength = maxA;
-            this.attractors.push(point.x);
-            this.attractors.push(point.y);
+            this.attractorArray.push(point.x);
+            this.attractorArray.push(point.y);
             //normalize data, the biggest attractors/repulsors are = 1.0
             // let s = map(point.strength,overallMin,overallMax,0,1.0);
             let s = map(point.strength,minA,maxA,0,1.0);
-            this.attractors.push(s);
+            this.attractorArray.push(s);
         }
         for(let point of r){
-            this.repulsors.push(point.x);
-            this.repulsors.push(point.y);
+            this.repulsorArray.push(point.x);
+            this.repulsorArray.push(point.y);
             // let s = map(point.strength,overallMax,overallMin,0,1.0);
             let s = map(point.strength,minR,maxR,0,1.0);
-            this.repulsors.push(s);
+            this.repulsorArray.push(s);
         }
     }
 }

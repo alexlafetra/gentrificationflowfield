@@ -1,39 +1,73 @@
-function whitePeopleComparedTo2000(tract){
-    return tract.raceData2020.obj.White/tract.raceData2000.obj.White;
-}
-function blackPeopleComparedTo2000(tract){
+function raceRatio2020to2000(tract,field){
     if(tract.raceData2000 == undefined || tract.raceData2020 == undefined)
         return 0;
-    return tract.raceData2020.obj.Black/tract.raceData2000.obj.Black;
+    const val = tract.raceData2020.obj[field]/tract.raceData2000.obj[field];
+    if(val == NaN)
+        return 0;
+    if(val == Infinity)
+        return 0;
+    if(!val)
+        return 0;
+    return val;
+}
+
+function whitePeopleComparedTo2000(tract){
+    return raceRatio2020to2000(tract,'White');
+}
+function blackPeopleComparedTo2000(tract){
+    return raceRatio2020to2000(tract,'Black');
 }
 function asianPeopleComparedTo2000(tract){
-    return tract.raceData2020.obj.Asian/tract.raceData2000.obj.Asian;
+    return raceRatio2020to2000(tract,'Asian');
+}
+
+function raceDifference(tract,field){
+    if(tract.raceData2000 == undefined || tract.raceData2020 == undefined)
+        return 0;
+    const val = tract.raceData2020.obj[field] - tract.raceData2000.obj[field];
+    if(val == NaN)
+        return 0;
+    if(val == Infinity)
+        return 0;
+    if(!val)
+        return 0;
+    return val;
 }
 
 function whitePeopleChange(tract){
-    return tract.raceData2020.obj.White - tract.raceData2000.obj.White;
+    return raceDifference(tract,'White');
 }
 function blackPeopleChange(tract){
-    if(tract.raceData2000 == undefined || tract.raceData2020 == undefined)
-        return 0;
-    return tract.raceData2020.obj.Black - tract.raceData2000.obj.Black;
+    return raceDifference(tract,'Black');
 }
 function asianPeopleChange(tract){
-    return tract.raceData2020.obj.Asian - tract.raceData2000.obj.Asian;
+    return raceDifference(tract,'Asian');
+}
+
+function raceChangeInProportion(tract,field){
+    if(tract.raceData2000 == undefined || tract.raceData2020 == undefined)
+        return 0;
+    const val = (tract.raceData2020.obj[field]/tract.raceData2020.obj.Total) - (tract.raceData2000.obj[field]/tract.raceData2000.obj.Total);
+    if(val == NaN)
+        return 0;
+    if(val == Infinity)
+        return 0;
+    if(!val)
+        return 0;
+    return val;
 }
 
 function proportionalWhiteChange(tract){
-    return (tract.raceData2020.obj.White/tract.raceData2020.obj.Total) - (tract.raceData2000.obj.White/tract.raceData2000.obj.Total);
+    return raceChangeInProportion(tract,'White');
 }
 function proportionalBlackChange(tract){
-    if(tract.raceData2000 == undefined || tract.raceData2020 == undefined)
-        return 0;
-    let val = (tract.raceData2020.obj.Black/tract.raceData2020.obj.Total) - (tract.raceData2000.obj.Black/tract.raceData2000.obj.Total);
-    return val;
+    return raceChangeInProportion(tract,'Black');
 }
 function proportionalAsianChange(tract){
-    return (tract.raceData2020.obj.Asian/tract.raceData2020.obj.Total) - (tract.raceData2000.obj.Asian/tract.raceData2000.obj.Total);
+    return raceChangeInProportion(tract,'Asian');
 }
+
+
 function ratioWhiteChange(tract){
     return (tract.raceData2020.obj.White/tract.raceData2020.obj.Total) / (tract.raceData2000.obj.White/tract.raceData2000.obj.Total);
 }
@@ -96,7 +130,6 @@ function getTopNTracts(n,func){
         else if(!b.hasData || b.raceData2020 == undefined || b.raceData2000 == undefined || b.rentData2000 == undefined || b.rentData2020 == undefined){
             return 0;
         }
-
         let A = func(a);
         let B = func(b);
 
@@ -144,7 +177,8 @@ function getSignificantPoints(n,func){
         let point = {
             x:((tracts[i].centroid.x+geoOffset.x)*scale.x+offset.x)/width+0.5,
             y:((tracts[i].centroid.y+geoOffset.y)*scale.y+offset.y)/height+0.5,
-            strength:func(tracts[i])
+            strength:func(tracts[i]),
+            tractName:tracts[i].properties.NAMELSAD
         }
         points.push(point);
     }

@@ -36,8 +36,8 @@ const NUMBER_OF_FIELDS = 1;
 
 //controls whether or not the sim will load with prerendered data/choropleths
 //or with the full dataset, allowing you to explore/experiment
-const devMode = true;
-// const devMode = false;
+// let devMode = true;
+let devMode = false;
 
 class DemographicVis{
     constructor(title,description,data){
@@ -51,7 +51,6 @@ class DemographicVis{
         ff.presetIndex = index;
         ff.calculateAttractors(NUMBER_OF_ATTRACTORS,this.demographicFunction);
         ff.updateFlow();
-        console.log(ff.attractors);
     }
 }
 
@@ -106,7 +105,7 @@ function logAttractorsDevmode(){
 
 function preload(){
     if(devMode)
-        loadData();
+        loadCensusCSVData();
     else
         loadPresetMaps();
 }
@@ -243,6 +242,10 @@ function setup_Prerendered(){
     flowField = new FlowField(mask,0,null,randomColor());
 }
 
+function mousePressed(){
+    // flowField.logClosestAttractorToMouse();
+}
+
 function logPresets(){
     let i = 0;
     let bigString;
@@ -265,8 +268,6 @@ function setup(){
     gl = mainCanvas.GL;
     randomShader = createShader(defaultVert,randomFrag);
 
-
-    // saveTable(rentData2000,'CONVERTED_Tracts_by_Rent_2000.csv');
     mask = createFramebuffer({width:width,height:height});
     
     if(devMode)
@@ -274,7 +275,11 @@ function setup(){
     else
         setup_Prerendered();
 
+    // saveTable(rentData2000,'CONVERTED_Tracts_by_Rent_2000.csv');
+
     initGL();
+
+
 
     presets[0].setActive(0,flowField);
 }
@@ -290,6 +295,13 @@ function draw(){
     if(flowField.isActive){
         flowField.updateParticles();
         flowField.renderGL();
-        flowField.renderData();
+        if(flowField.showingData)
+            flowField.renderData();
+        if(flowField.renderAs){
+            // flowField.renderAttractors();
+        }
+        if(flowField.renderRs){
+            // flowField.renderRepulsors();
+        }
     }
 }

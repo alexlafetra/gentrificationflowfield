@@ -107,5 +107,6 @@ function initGui(){
     new GuiButton("Reset Particles",()=>{for(let ff of flowFields){ff.resetParticles()}});
     new GuiButton("Save FF and Choro.",()=>{saveFlowField();saveChoropleth();});
     new GuiButton("Log Attractors/Repulsors",()=>{logAttractors();});
+    new GuiButton("Reload in "+devMode?"static":"dev"+" mode",()=>{devMode = !devMode; initializeSketch();});
     new GuiButton("Save GIF",()=>{saveGif('flowfield_'+presets[flowFields[0].presetIndex].text+'.gif',2);});
 }

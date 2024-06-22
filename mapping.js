@@ -62,15 +62,13 @@ function filterNonBayAreaCounties(data){
     return convertedData;
 }
 
-let TRACT_COLUMN_ID;
-let COUNTY_COLUMN_ID;
-
+//Adds rows for tract and county codes
 function getTractAndCountyCodes(data){
     //adding 6-digit tract id's for 2000
     data.addColumn('Tract');
-    TRACT_COLUMN_ID = data.getColumnCount()-1;
+    // const TRACT_COLUMN_ID = data.getColumnCount()-1;
     data.addColumn('County');
-    COUNTY_COLUMN_ID = data.getColumnCount()-1;
+    // const COUNTY_COLUMN_ID = data.getColumnCount()-1;
 
     let rows = data.getRows();
     for(let row of rows){
@@ -80,6 +78,7 @@ function getTractAndCountyCodes(data){
     }
 } 
 
+//prints out a tract in the console (for debugging)
 function search(tractID,column){
     let tract2000 = raceData2000.findRows(tractID,column);
     console.log("2000:");
@@ -138,47 +137,49 @@ function alignGeoAndData(features){
     missingTracts = [];
     for(let tract of features){
         let countyFIPSCode = tract.properties.COUNTYFP;
-        if(isItInTheBayTho(countyFIPSCode)){
-            // get tract id from the geojson file
-            let tractID = tract.properties.TRACTCE;
-            // use that id to lookup the racial demographic data from 2000
-            // let row2000 = raceData2000.findRow(tractID,'Tract Number');
-            let row2000 = raceData2000.findRow(tractID,'Tract');
-            if(!row2000){
-                tract.hasData2000 = false;
-                missingTracts.push(tractID+" -- 2000 (RACE)");
-            }
-            let row2020 = raceData2020.findRow(tractID,'Tract');
-            if(!row2020){
-                tract.hasData2020 = false;
-                missingTracts.push(tractID+" -- 2020 (RACE)");
-            }
-            let rentRow2000 = rentData2000.findRow(tractID,'Tract');
-            if(!rentRow2000){
-                tract.hasRentData2000 = false;
-                missingTracts.push(tractID+" -- 2000 (RENT)");
-            }
-            let rentRow2020 = rentData2020.findRow(tractID,'Tract');
-            if(!rentRow2000){
-                tract.hasRentData2020 = false;
-                missingTracts.push(tractID+" -- 2000 (RENT)");
-            }
-            //add that data to the tract object, if you found some data
-            if(row2000 && row2020){
-                //if there are people in the tract
-                if(row2000.get('Total') > 0 && row2020.get('Total') > 0){
-                    tract.raceData2000 = row2000;
-                    tract.raceData2020 = row2020;
-                    tract.rentData2000 = rentRow2000;
-                    tract.rentData2020 = rentRow2020;
-                    tract.hasData = true;
-                }
-            }
-            else{
-                tract.hasData = false;
-            }
-            bayTracts.push(tract);
+        //if it's not in the bay, skip it!
+        if(!isItInTheBayTho(countyFIPSCode)){
+            continue;
         }
+        // get tract id from the geojson file
+        let tractID = tract.properties.TRACTCE;
+        // use that id to lookup the racial demographic data from 2000
+        // let row2000 = raceData2000.findRow(tractID,'Tract Number');
+        let raceRow2000 = raceData2000.findRow(tractID,'Tract');
+        if(!raceRow2000){
+            tract.hasRaceData2000 = false;
+            missingTracts.push(tractID+" -- 2000 (RACE)");
+        }
+        let raceRow2020 = raceData2020.findRow(tractID,'Tract');
+        if(!raceRow2020){
+            tract.hasRaceData2020 = false;
+            missingTracts.push(tractID+" -- 2020 (RACE)");
+        }
+        let rentRow2000 = rentData2000.findRow(tractID,'Tract');
+        if(!rentRow2000){
+            tract.hasRentData2000 = false;
+            missingTracts.push(tractID+" -- 2000 (RENT)");
+        }
+        let rentRow2020 = rentData2020.findRow(tractID,'Tract');
+        if(!rentRow2000){
+            tract.hasRentData2020 = false;
+            missingTracts.push(tractID+" -- 2000 (RENT)");
+        }
+        //add that data to the tract object, if you found some data
+        if(raceRow2000 && raceRow2020 && rentRow2000 && rentRow2020){
+            //if there are people in the tract
+            if(raceRow2000.get('Total') > 0 && raceRow2020.get('Total') > 0){
+                tract.raceData2000 = raceRow2000;
+                tract.raceData2020 = raceRow2020;
+                tract.rentData2000 = rentRow2000;
+                tract.rentData2020 = rentRow2020;
+                tract.hasData = true;
+            }
+        }
+        else{
+            tract.hasData = false;
+        }
+        bayTracts.push(tract);
     }
     if(missingTracts.length){
         console.log("Missing tracts:");
