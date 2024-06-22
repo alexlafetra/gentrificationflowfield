@@ -68,7 +68,7 @@ class GuiDropdown{
 }
 
 class FlowFieldSelector{
-    constructor(options,defaultOption,label,state,container){
+    constructor(options,defaultOption,label,container){
         this.container = createDiv();
         this.container.addClass('flowfield-container');
 
@@ -79,7 +79,13 @@ class FlowFieldSelector{
 
         this.selector = createSelect();
         for(let i = 0; i<options.length;i++){
-            this.selector.option(options[i].title,i);
+            if(options[i].startsWith('<h>')){//check if it's a header
+                options[i] = options[i].slice(3);
+                this.selector.option(options[i],i);
+                this.selector.elt.options[i].disabled = true;//disable it as an option if it is
+            }
+            else
+                this.selector.option(options[i],i);
         }
         this.selector.addClass("gui_select");
         this.selector.selected(defaultOption);
@@ -89,6 +95,11 @@ class FlowFieldSelector{
     }
     value(){
         return this.selector.value();
+    }
+    addHeader(label,index){
+         // Add a header
+        this.selector.option('Select an option', '');
+        sel.elt.options[0].disabled = true;
     }
     selected(){
         return this.selector.selected();

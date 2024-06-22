@@ -178,15 +178,19 @@ class FlowField{
         this.maskParticlesCheckbox = new GuiCheckbox("Mask Off Oceans",this.maskParticles,this.controlPanel);
         this.showTractsCheckbox = new GuiCheckbox("Show Tract Boundaries",false,this.controlPanel);
         this.showFlowCheckbox = new GuiCheckbox("Show Flow Field",false,this.controlPanel);
-        // this.showMapCheckbox = new GuiCheckbox("Show Map",false,this.controlPanel);
         this.showHOLCCheckbox = new GuiCheckbox("Show HOLC Tracts",false,this.controlPanel);
-        this.activeCheckbox = new GuiCheckbox("Simulate",this.isActive,this.controlPanel);
+        this.activeCheckbox = new GuiCheckbox("Run",this.isActive,this.controlPanel);
         this.showDataCheckbox = new GuiCheckbox("Show Data Textures",this.showingData,this.controlPanel);
-
         this.showAttractorsCheckbox = new GuiCheckbox("Show Attractors",this.renderAs,this.controlPanel);
         this.showRepulsorsCheckbox = new GuiCheckbox("Show Repulsors",this.renderRs,this.controlPanel);
 
-        this.flowFieldSelector = new FlowFieldSelector(presets,this.presetIndex,"Demographic Data",true,this.controlPanel);
+        let options = [];
+        for(let i = 0; i<presets.length; i++){
+            options.push(presets[i].title);
+        }
+        this.presetSelector = new FlowFieldSelector(options,this.presetIndex,"Demographic Data",this.controlPanel);
+        const geoOptions = ["Entire Bay Area","San Francisco","West Oakland"];
+        this.geoScaleSelector = new FlowFieldSelector(geoOptions,this.geoPresetIndex,"Place",this.controlPanel);
        
         this.controlPanel.parent(gui);
     }
@@ -204,6 +208,7 @@ class FlowField{
         this.renderAs = this.showAttractorsCheckbox.value();
         this.renderRs = this.showRepulsorsCheckbox.value();
 
+        //updating repulsion/attraction strengths
         let needToUpdateFF = false;
         if(this.repulsionStrength != this.repulsionStrengthSlider.value() && !mouseIsPressed){
             this.repulsionStrength = this.repulsionStrengthSlider.value();
@@ -213,12 +218,13 @@ class FlowField{
             this.attractionStrength = this.attractionStrengthSlider.value();
             needToUpdateFF = true;
         }
-        if(needToUpdateFF){
+        if(needToUpdateFF){//only update ONCE, even if both are changed
             this.updateFlow();
         }
 
-        if(this.presetIndex != this.flowFieldSelector.selected()){
-            presets[this.flowFieldSelector.selected()].setActive(this.flowFieldSelector.selected(),this);
+        //check to see if the flowfield selector has been changed, and if it has, set the new preset
+        if(this.presetIndex != this.presetSelector.selected()){
+            presets[this.presetSelector.selected()].setActive(this.presetSelector.selected(),this);
         }
     }
     updateFlow(){

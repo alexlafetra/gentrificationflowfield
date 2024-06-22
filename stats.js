@@ -1,3 +1,6 @@
+//Storing some overall totals in the "totalStats" object
+let totalStats;
+
 function raceRatio2020to2000(tract,field){
     if(tract.raceData2000 == undefined || tract.raceData2020 == undefined)
         return 0;
@@ -19,6 +22,9 @@ function blackPeopleComparedTo2000(tract){
 }
 function asianPeopleComparedTo2000(tract){
     return raceRatio2020to2000(tract,'Asian');
+}
+function hispanicOrLatinoPeopleComparedTo2000(tract){
+    return raceRatio2020to2000(tract,'Total races tallied for householders!!Total races tallied for Not Hispanic or Latino householders');
 }
 
 function raceDifference(tract,field){
@@ -43,6 +49,9 @@ function blackPeopleChange(tract){
 function asianPeopleChange(tract){
     return raceDifference(tract,'Asian');
 }
+function hispanicOrLatinoPeopleChange(tract){
+    return raceDifference(tract,'Total races tallied for householders!!Total races tallied for Not Hispanic or Latino householders');
+}
 
 function raceChangeInProportion(tract,field){
     if(tract.raceData2000 == undefined || tract.raceData2020 == undefined)
@@ -66,6 +75,10 @@ function proportionalBlackChange(tract){
 function proportionalAsianChange(tract){
     return raceChangeInProportion(tract,'Asian');
 }
+function proportionalHispOrLatinoChange(tract){
+    return raceChangeInProportion(tract,'Total races tallied for householders!!Total races tallied for Not Hispanic or Latino householders');
+}
+
 
 
 function ratioWhiteChange(tract){
@@ -120,6 +133,48 @@ function rentBurden40to49(tract){
 }
 function rentBurden50orMore(tract){
     return rentBurden(tract,'50 percent or more');
+}
+function createPresets(){
+    //Preset color/flows
+    whiteProportionComparisonPreset = new DemographicVis("Change In Proportion of White Population", "P<sub>White 2000</sub> / P<sub>Total 2000</sub> - P<sub>White 2020</sub> / P<sub>Total 2020</sub>",proportionalWhiteChange);
+    blackProportionComparisonPreset = new DemographicVis("Change In Proportion of Black Population","P<sub>Black 2000</sub> / P<sub>Total 2000</sub> - P<sub>Black 2020</sub> / P<sub>Total 2020</sub>",proportionalBlackChange);
+    asianProportionComparisonPreset = new DemographicVis("Change In Proportion of Asian Population","P<sub>Asian 2000</sub> / P<sub>Total 2000</sub> - P<sub>Asian 2020</sub> / P<sub>Total 2020</sub>",proportionalAsianChange);
+    hispOrLatinoProportionComparisonPreset = new DemographicVis("Change In Proportion of Hispanic or Latino Population","P<sub>Hisp. or Latino 2000</sub> / P<sub>Total 2000</sub> - P<sub>Hisp. or Latino 2020</sub> / P<sub>Total 2020</sub>",proportionalHispOrLatinoChange);
+
+    whiteComparisonPreset = new DemographicVis("Change in White Population","P<sub>White 2020</sub> - P<sub>White 2000</sub>",whitePeopleChange);
+    blackComparisonPreset = new DemographicVis("Change in Black Population","P<sub>Black 2020</sub> - P<sub>Black 2000</sub>",blackPeopleChange);
+    asianComparisonPreset = new DemographicVis("Change in Asian Population","P<sub>Asian 2020</sub> - P<sub>Asian 2000</sub>",asianPeopleChange);
+    hispOrLatinoComparisonPreset = new DemographicVis("Change in Hispanic or Latino Population","P<sub>Hisp. or Latino 2020</sub> - P<sub>Hisp. or Latino 2000</sub>",hispanicOrLatinoPeopleChange);
+
+    rentBurden1 = new DemographicVis("Change in Renters spending less than 10% of monthly income","",rentBurdenLessThan10);
+    rentBurden2 = new DemographicVis("Change in Renters spending 10-14% of monthly income","",rentBurden10to14);
+    rentBurden3 = new DemographicVis("Change in Renters spending 15-19% of monthly income","",rentBurden15to19);
+    rentBurden4 = new DemographicVis("Change in Renters spending 20-24% of monthly income","",rentBurden20to24);
+    rentBurden5 = new DemographicVis("Change in Renters spending 25-29% of monthly income","",rentBurden25to29);
+    rentBurden6 = new DemographicVis("Change in Renters spending 30-34% of monthly income","",rentBurden30to34);
+    rentBurden7 = new DemographicVis("Change in Renters spending 35-39% of monthly income","",rentBurden35to39);
+    rentBurden8 = new DemographicVis("Change in Renters spending 40-49% of monthly income","",rentBurden40to49);
+    rentBurden9 = new DemographicVis("Change in Renters spending more than 50% of monthly income","",rentBurden50orMore);
+
+    presets = [
+        whiteProportionComparisonPreset,
+        blackProportionComparisonPreset,
+        asianProportionComparisonPreset,
+        hispOrLatinoProportionComparisonPreset,
+        whiteComparisonPreset,
+        blackComparisonPreset,
+        asianComparisonPreset,
+        hispOrLatinoComparisonPreset,
+        rentBurden1,
+        rentBurden2,
+        rentBurden3,
+        rentBurden4,
+        rentBurden5,
+        rentBurden6,
+        rentBurden7,
+        rentBurden8,
+        rentBurden9
+    ];
 }
 
 function getTopNTracts(n,func){
@@ -196,4 +251,31 @@ function getLeastSignificantPoints(n,func){
         points.push(point);
     }
     return points;
+}
+
+function getTotalStats(){
+    totalStats = {'2000':{total:0,
+                          white:0,
+                          black:0,
+                          asian:0},
+                  '2020':{total:0,
+                          white:0,
+                          black:0,
+                          asian:0}};
+
+    for(let tract of bayTracts){
+        if(!tract.hasData)
+            continue;
+        totalStats[2000].white += tract.raceData2000.obj['White'];
+        totalStats[2020].white += tract.raceData2020.obj['White'];
+
+        totalStats[2000].black += tract.raceData2000.obj['Black'];
+        totalStats[2020].black += tract.raceData2020.obj['Black'];
+
+        totalStats[2000].asian += tract.raceData2000.obj['Asian'];
+        totalStats[2020].asian += tract.raceData2020.obj['Asian'];
+
+        totalStats[2000].total += tract.raceData2000.obj['Total'];
+        totalStats[2020].total += tract.raceData2020.obj['Total'];
+    }
 }
