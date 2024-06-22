@@ -129,7 +129,17 @@ class FlowField{
             const y = (this.repulsorArray[i+1]-0.5)*mainCanvas.height;
             const size = map(this.repulsorArray[i+2],this.repulsorArray[this.repulsorArray.length-1],this.repulsorArray[2],10,1);//scaling size
             const alpha = map(size,1,10,0,255);
-            fill(this.repulsionColor,alpha);
+            if(this.repulsorObjects[i]){
+                if(this.repulsorObjects[i].clicked){
+                    fill(255,255,0);
+                    size = 20;
+                }
+                else{
+                    fill(this.repulsionColor,alpha);
+                }
+            }
+            else
+                fill(this.repulsionColor,alpha);
             noStroke();
             ellipse(x,y,size,size);
         }
@@ -173,6 +183,9 @@ class FlowField{
         this.activeCheckbox = new GuiCheckbox("Simulate",this.isActive,this.controlPanel);
         this.showDataCheckbox = new GuiCheckbox("Show Data Textures",this.showingData,this.controlPanel);
 
+        this.showAttractorsCheckbox = new GuiCheckbox("Show Attractors",this.renderAs,this.controlPanel);
+        this.showRepulsorsCheckbox = new GuiCheckbox("Show Repulsors",this.renderRs,this.controlPanel);
+
         this.flowFieldSelector = new FlowFieldSelector(presets,this.presetIndex,"Demographic Data",true,this.controlPanel);
        
         this.controlPanel.parent(gui);
@@ -188,6 +201,8 @@ class FlowField{
         this.isActive = this.activeCheckbox.value();
         this.randomAmount = this.randomValueSlider.value();
         this.showingData = this.showDataCheckbox.value();
+        this.renderAs = this.showAttractorsCheckbox.value();
+        this.renderRs = this.showRepulsorsCheckbox.value();
 
         let needToUpdateFF = false;
         if(this.repulsionStrength != this.repulsionStrengthSlider.value() && !mouseIsPressed){
@@ -346,6 +361,8 @@ class FlowField{
         saveCanvas(this.flowFieldTexture,"flowField.png","png");
     }
     setPresetAttractors(){
+        this.attractorObjects = presets[this.presetIndex].attractors;
+        this.repulsorObjects = presets[this.presetIndex].repulsors;
         this.calcPoints(presets[this.presetIndex].attractors,presets[this.presetIndex].repulsors);
     }
     calcPoints(a,r){

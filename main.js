@@ -217,12 +217,16 @@ function setup_Prerendered(){
     asianProportionComparisonPreset = new Preset("Change In Proportion of Population Identifying as Asian",
                                             "P<sub>Asian 2000</sub> / P<sub>Total 2000</sub> - P<sub>Asian 2020</sub> / P<sub>Total 2020</sub>",5,preset5Attractors,preset5Repulsors);
 
-    whiteRatioPreset = new Preset("Ratio of Proportions of Population Identifying as White",
-                                            "(P<sub>White 2000</sub> / P<sub>Total 2000</sub>) / (P<sub>White 2020</sub> / P<sub>Total 2020</sub>)",6,preset6Attractors,preset6Repulsors);
-    blackRatioPreset = new Preset("Ratio of Proportions of Population Identifying as Black",
-                                            "(P<sub>Black 2000</sub> / P<sub>Total 2000</sub>) / (P<sub>Black 2020</sub> / P<sub>Total 2020</sub>)",7,preset7Attractors,preset7Repulsors);
-    asianRatioPreset = new Preset("Ratio of Proportions of Population Identifying as Asian",
-                                            "(P<sub>Asian 2000</sub> / P<sub>Total 2000</sub>) / (P<sub>Asian 2020</sub> / P<sub>Total 2020</sub>)",8,preset8Attractors,preset8Repulsors);
+    rentBurden1= new Preset("Renters spending less than 10% of monthly income","idk",9,preset6Attractors,preset6Repulsors);
+    rentBurden2= new Preset("Renters spending 10-14% of monthly income","idk",10,preset7Attractors,preset7Repulsors);
+    rentBurden3= new Preset("Renters spending 15-19% of monthly income","idk",11,preset8Attractors,preset8Repulsors);
+    rentBurden4= new Preset("Renters spending 20-24% of monthly income","idk",12,preset9Attractors,preset9Repulsors);
+    rentBurden5= new Preset("Renters spending 25-29% of monthly income","idk",13,preset10Attractors,preset10Repulsors);
+    rentBurden6= new Preset("Renters spending 30-34% of monthly income","idk",14,preset11Attractors,preset11Repulsors);
+    rentBurden7= new Preset("Renters spending 35-39% of monthly income","idk",15,preset12Attractors,preset12Repulsors);
+    rentBurden8= new Preset("Renters spending 40-49% of monthly income","idk",16,preset13Attractors,preset13Repulsors);
+    rentBurden9= new Preset("Renters spending more than 50% of monthly income","idk",17,preset14Attractors,preset14Repulsors);
+
     presets = [
         whiteProportionComparisonPreset,
         blackProportionComparisonPreset,
@@ -230,9 +234,15 @@ function setup_Prerendered(){
         whiteComparisonPreset,
         blackComparisonPreset,
         asianComparisonPreset,
-        whiteRatioPreset,
-        blackRatioPreset,
-        asianRatioPreset
+        rentBurden1,
+        rentBurden2,
+        rentBurden3,
+        rentBurden4,
+        rentBurden5,
+        rentBurden6,
+        rentBurden7,
+        rentBurden8,
+        rentBurden9
     ];
 
     //creating map mask
@@ -279,8 +289,6 @@ function setup(){
 
     initGL();
 
-
-
     presets[0].setActive(0,flowField);
 }
 
@@ -298,10 +306,10 @@ function draw(){
         if(flowField.showingData)
             flowField.renderData();
         if(flowField.renderAs){
-            // flowField.renderAttractors();
+            flowField.renderAttractors();
         }
         if(flowField.renderRs){
-            // flowField.renderRepulsors();
+            flowField.renderRepulsors();
         }
     }
 }
