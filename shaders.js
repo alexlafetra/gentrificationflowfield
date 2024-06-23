@@ -28,24 +28,18 @@ const updateVelFrag = glsl`
 precision highp float;
 precision highp sampler2D;
 
-uniform sampler2D uParticleVel;
 uniform sampler2D uParticlePos;
 uniform sampler2D uFlowFieldTexture;
-
-uniform float uForceStrength;
-
 varying vec2 vParticleCoord;
 
 void main(){
     //Get position in clip space
     vec4 screenPosition = texture2D(uParticlePos,vParticleCoord);
-    //Get current velocity
-    vec4 oldVel = texture2D(uParticleVel,vParticleCoord);
     //Get the acceleration/force from the flow field texture
     vec4 flowForce = texture2D(uFlowFieldTexture,screenPosition.xy);
     //Recombine the attractor/repulsor forces
     vec2 newVel = vec2(flowForce.x+flowForce.z,flowForce.y+flowForce.w);
-
+    //write the new force to the texture
     gl_FragColor = vec4(newVel,1.0,1.0);
 }
 `;
@@ -65,7 +59,7 @@ float random(vec2 coord, float seed){
 }
 
 void main(){
-    gl_FragColor = vec4(random(vParticleCoord,1.0+uRandomSeed)*uScale,random(vParticleCoord,2.0+uRandomSeed)*uScale,random(vParticleCoord,0.0+uRandomSeed)*uScale,1.0);
+    gl_FragColor = vec4(random(vParticleCoord,1.0+uRandomSeed)*uScale,random(vParticleCoord,2.0+uRandomSeed)*uScale,random(vParticleCoord,0.0+uRandomSeed)*uScale,random(vParticleCoord,3.0+uRandomSeed)*uScale);
 }
 `;
 
@@ -140,7 +134,7 @@ varying vec2 vParticleCoord;
 
 void main(){
     //passing aTexCoord into the frag shader
-    vParticleCoord = vec2(aTexCoord.x,aTexCoord.y);
+    vParticleCoord = aTexCoord;
     //always gotta end by setting gl_Position equal to something;
     gl_Position = vec4(aPosition,1.0);
 }
@@ -151,6 +145,7 @@ precision highp float;
 precision highp sampler2D;
 
 uniform sampler2D uParticleVelTexture;
+uniform sampler2D uFlowFieldTexture;
 uniform sampler2D uParticlePosTexture;
 uniform sampler2D uParticleAgeTexture;
 uniform sampler2D uParticleMask;
@@ -171,27 +166,31 @@ float random (vec2 st) {
 
 void main(){
     //getting the particle position
-    vec4 texturePosition = texture2D(uParticlePosTexture,vParticleCoord);
+    vec4 screenPosition = texture2D(uParticlePosTexture,vParticleCoord);
 
     //checking the age of the particle
     vec4 textureAge = texture2D(uParticleAgeTexture,vParticleCoord);
-    bool died = false;
+
     //if it's too old, put it somewhere random (within the mask) and return
     if(textureAge.x > uAgeLimit){
-        texturePosition.x = random(texturePosition.xy);
-        texturePosition.y = random(texturePosition.xy);
-        died = true;
+        screenPosition.x = random(screenPosition.xy);
+        screenPosition.y = random(screenPosition.xy);
     }
 
     //getting the velocity
     vec4 textureVelocity = texture2D(uParticleVelTexture,vParticleCoord);
+
     //getting the random vel
     if(uRandomScale>0.0){
-        textureVelocity += uRandomScale*vec4(random(texturePosition.xx)-0.5,random(texturePosition.yy)-0.5,1.0,1.0);
+        textureVelocity += uRandomScale*vec4(random(screenPosition.xx)-0.5,random(screenPosition.yy)-0.5,1.0,1.0);
     }
 
+    vec4 flowForce =  texture2D(uFlowFieldTexture,screenPosition.xy);
+
     //creating the new position (for some reason, you gotta do it like this)
-    vec4 newPos = vec4(texturePosition.x+uDamp*(textureVelocity.x),texturePosition.y+uDamp*(textureVelocity.y),1.0,1.0);
+    vec4 newPos = vec4(screenPosition.x+uDamp*(textureVelocity.x),screenPosition.y+uDamp*(textureVelocity.y),1.0,1.0);
+    // vec4 newPos = vec4(screenPosition.x+uDamp*(textureVelocity.x),screenPosition.y+uDamp*(textureVelocity.y),1.0,1.0);
+
     //checking to see if it's within the mask
     if(uUseMaskTexture){
         float val = texture2D(uParticleMask,newPos.xy).x;
@@ -199,7 +198,6 @@ void main(){
             //try to place the particle 100 times
             for(int i = 0; i<100; i++){
                 vec2 replacementPos = vec2(random(vParticleCoord*uTime),random(vParticleCoord/uTime));
-                // val = texture2D(uParticleMask,replacementPos).x;
                 val = texture2D(uParticleMask,replacementPos).x;
                 if(val>0.5){
                     gl_FragColor = vec4(replacementPos.xy,1.0,1.0);
@@ -210,7 +208,7 @@ void main(){
         }
     }
     //you actually don't need to wrap bounds b/c of the particle age decay
-    gl_FragColor = newPos;
+    gl_FragColor = vec4(newPos.xy,1.0,1.0);
 }
 `;
 

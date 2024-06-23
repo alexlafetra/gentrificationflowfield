@@ -264,6 +264,7 @@ class FlowField{
         this.uPositionTextureBuffer.begin();
         shader(this.updatePositionShader);
         this.updatePositionShader.setUniform('uParticleVelTexture',this.velTexture);
+        this.updatePositionShader.setUniform('uFlowFieldTexture',this.flowFieldTexture);
         this.updatePositionShader.setUniform('uParticlePosTexture',this.uPositionTexture);
         this.updatePositionShader.setUniform('uDamp',this.velDampValue/10.0);
         this.updatePositionShader.setUniform('uRandomScale',this.randomAmount);
@@ -280,8 +281,6 @@ class FlowField{
     updateVel(){
         this.velTextureBuffer.begin();
         shader(this.updateVelShader);
-        this.updateVelShader.setUniform('uForceStrength',this.forceStrength);
-        this.updateVelShader.setUniform('uParticleVel',this.velTexture);
         this.updateVelShader.setUniform('uParticlePos',this.uPositionTexture);
         this.updateVelShader.setUniform('uFlowFieldTexture',this.flowFieldTexture);
         quad(-1,-1,1,-1,1,1,-1,1);//upside down bc the textures get flipped
@@ -379,8 +378,6 @@ class FlowField{
         let string = presetName + "Attractors = "+JSON.stringify(a)+"\n"+presetName+"Repulsors = "+JSON.stringify(r)+";\n";
         console.log(string);
         return string;
-        // console.log();
-        // console.log(JSON.stringify(r));
     }
     saveFFImage(){
         saveCanvas(this.flowFieldTexture,"flowField.png","png");
