@@ -39,6 +39,7 @@ class FlowField{
         this.attractionStrength = 3.0;
         this.size = height;
         this.presetIndex = presetIndex;//index of the active preset
+        this.activeViewPreset = 0;
         this.maskParticles = true;
         this.isActive = true;
         this.showingData = false;
@@ -167,17 +168,17 @@ class FlowField{
         this.attractionColorPicker = createColorPicker(this.attractionColor);
         this.attractionColorPicker.parent(this.controlPanel);
 
-        this.dampValueSlider = new GuiSlider(0.001,0.02, this.velDampValue,0.001,"Damping",this.controlPanel);
+        this.dampValueSlider = new GuiSlider(0.001,0.02, this.velDampValue,0.001,"Speed",this.controlPanel);
         this.randomValueSlider = new GuiSlider(0,10, this.randomAmount,0.01,"Drift",this.controlPanel);
-        this.attractionStrengthSlider = new GuiSlider(0,10.0,this.attractionStrength,0.001,"Attraction Strength",this.controlPanel);
-        this.repulsionStrengthSlider = new GuiSlider(0,10.0,this.repulsionStrength,0.001,"Repulsion Strength",this.controlPanel);
+        this.attractionStrengthSlider = new GuiSlider(0,10.0,this.attractionStrength,0.001,"Attraction",this.controlPanel);
+        this.repulsionStrengthSlider = new GuiSlider(0,10.0,this.repulsionStrength,0.001,"Repulsion",this.controlPanel);
         this.particleSlider = new GuiSlider(1,dataTextureDimension*dataTextureDimension,this.particleCount,1,"Particles",this.controlPanel);
-        this.decaySlider = new GuiSlider(0.0001,0.2,this.trailDecayValue,0.0001,"decay",this.controlPanel);
+        this.decaySlider = new GuiSlider(0.0001,0.2,this.trailDecayValue,0.0001,"Decay",this.controlPanel);
         this.particleSizeSlider = new GuiSlider(0,10.0,this.pointSize,0.1,"Size",this.controlPanel);
         this.maskParticlesCheckbox = new GuiCheckbox("Mask Off Oceans",this.maskParticles,this.controlPanel);
-        this.showTractsCheckbox = new GuiCheckbox("Show Tract Boundaries",false,this.controlPanel);
+        this.showTractsCheckbox = new GuiCheckbox("Overlay Census Tract Boundaries",false,this.controlPanel);
         this.showFlowCheckbox = new GuiCheckbox("Show Flow Field",false,this.controlPanel);
-        this.showHOLCCheckbox = new GuiCheckbox("Show HOLC Tracts",false,this.controlPanel);
+        this.showHOLCCheckbox = new GuiCheckbox("Overlay HOLC Redlining Tracts",false,this.controlPanel);
         this.activeCheckbox = new GuiCheckbox("Run",this.isActive,this.controlPanel);
         this.showDataCheckbox = new GuiCheckbox("Show Data Textures",this.showingData,this.controlPanel);
         this.showAttractorsCheckbox = new GuiCheckbox("Show Attractors",this.renderAs,this.controlPanel);
@@ -192,7 +193,7 @@ class FlowField{
         for(let view of viewPresets){
             geoOptions.push(view.name);
         }
-        this.geoScaleSelector = new FlowFieldSelector(geoOptions,0,"Place",this.controlPanel);
+        this.geoScaleSelector = new FlowFieldSelector(geoOptions,0,"View",this.controlPanel);
        
         this.controlPanel.parent(gui);
     }
@@ -232,7 +233,10 @@ class FlowField{
             let index = this.geoScaleSelector.selected();
             offset = {x:viewPresets[index].x,y:viewPresets[index].y};
             scale = {x:viewPresets[index].scale,y:-viewPresets[index].scale};
-            activeViewPreset = index;
+            this.activeViewPreset = index;
+            this.trailLayer.begin();
+            clear();
+            this.trailLayer.end();
             this.updateParticleMask();
             this.updateFlow();
         }
@@ -306,8 +310,7 @@ class FlowField{
     }
     renderGL(){
         if(this.showTractsCheckbox.value()){
-            // image(tractOutlines,-width/2,-height/2,width,height);
-            renderTransformedImage(tractOutlines,2/10*mainCanvas.width);
+            renderTransformedImage(tractOutlines);
         }
         if(this.showHOLCCheckbox.value()){
             renderTransformedImage(holcTexture);
@@ -334,6 +337,7 @@ class FlowField{
         gl.activeTexture(gl.TEXTURE1);
         gl.bindTexture(gl.TEXTURE_2D, this.flowFieldTexture.colorTexture);
 
+        //running the particle-drawing shader
         shader(this.pointShader);
         this.pointShader.setUniform('uPositionTexture',this.uPositionTexture);
         this.pointShader.setUniform('uColorTexture',this.flowFieldTexture);

@@ -1,3 +1,22 @@
+/*
+
+Some inspiration:
+https://blog.mapbox.com/how-i-built-a-wind-map-with-webgl-b63022b5537f
+https://nullprogram.com/blog/2014/06/29/
+https://nullprogram.com/webgl-particles/
+https://apps.amandaghassaei.com/gpu-io/examples/fluid/
+
+Future improvements:
+get floating point textures working on mobile
+combine vel+position processing into one texture+shader pass?
+
+To render tract+mask textures:
+set canvas size (mainCanvas) to 1000x1000
+
+Add in something about financial policy
+
+*/
+
 let flowField;
 let flowFields = [];
 let holcTexture;
@@ -32,33 +51,36 @@ let devMode = false;
 
 const viewPresets = [
     {
-        name: "Bay Area",
+        name: "Entire Bay Area",
         x: 125,
         y: 125,
-        scale: 200
+        scale: 280
     },
     {
         name: "San Francisco",
-        x: 0,
-        y: 0,
-        scale: 1
+        x: 1150,
+        y: 750,
+        scale: 2000
     },
     {
-        name: "San Jose",
+        name: "San Jose/East Oakland",
         x: 32,
         y: 125,
         scale: 500
     },
     {
         name: "West Oakland",
-        x: 32,
-        y: 125,
-        scale: 500
-    }
-
+        x: 800,
+        y: 1000,
+        scale: 2000
+    },
+    {
+        name: "Berkeley",
+        x: 800,
+        y: 1000,
+        scale: 2000
+    },
 ];
-
-let activeViewPreset = 0;
 
 class DemographicVis{
     constructor(title,description,data){
@@ -98,12 +120,9 @@ function saveTracts(){
 //you gotta be in devmode for this!
 //renders tracts to a canvas, then saves it
 function saveTractOutlines(){
-    const temp = createFramebuffer({width:6000,height:6000});
+    const temp = createFramebuffer({width:4000,height:4000});
     const oldScale = scale;
-    // scale.x*=1;
-    // scale.y*=1;
     temp.begin();
-    scale(5,5,5);
     background(0,0);
     strokeWeight(1);
     renderTractOutlines(geoOffset,color(0));
@@ -174,6 +193,15 @@ function setup_DevMode(){
     let s = mainCanvas.width*2/5;
     scale = {x:s,y:s*(-1)};//manually adjusting the scale to taste
 
+    // tractOutlines = createFramebuffer({width:width,height:height});
+    // tractOutlines.begin();
+    // strokeWeight(1);
+    // renderTractOutlines(geoOffset,color(100));
+    // tractOutlines.end();
+    // saveCanvas(tractOutlines, 'censusTractOutlines.png','png');
+
+
+
     flowField = new FlowField(0);
     flowField.calculateAttractors(NUMBER_OF_ATTRACTORS);
 }
@@ -202,9 +230,10 @@ function logPresets(){
 
 function setup(){
     //create canvas and grab webGL context
-    mainCanvas = createCanvas(500,500,WEBGL);
+    mainCanvas = createCanvas(700,700,WEBGL);
     gl = mainCanvas.GL;
     randomShader = createShader(defaultVert,randomFrag);
+
 
     if(devMode)
         setup_DevMode();

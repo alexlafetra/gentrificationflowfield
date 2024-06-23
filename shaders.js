@@ -258,33 +258,6 @@ void main() {
 `;
 
 //Creating the flow field from a series of points
-const repulsorDistanceFrag = glsl`
-precision mediump float;
-
-varying vec2 vTexCoord;
-
-uniform vec3 uRepulsors[`+NUMBER_OF_ATTRACTORS+glsl`];
-
-// uniform float uThreshold;
-
-void main(){
-    float repulsion = 0.0;
-    float threshold = 80.0;
-    //calculate attractors/repulsors
-    for(int i = 0; i<`+NUMBER_OF_ATTRACTORS+glsl`; i++){
-        float dR = distance(uRepulsors[i].xy,vTexCoord);
-        // repulsion+=uRepulsors[i].z/(dR*dR);
-        repulsion+=1.0/(dR*dR);
-    }
-    repulsion/=`+NUMBER_OF_ATTRACTORS+glsl`.0;
-    if(repulsion > threshold)
-        gl_FragColor = vec4(1.0);
-    else
-        gl_FragColor = vec4(0.0,0.0,0.0,1.0);
-}
-`;
-
-//Creating the flow field from a series of points
 const flowMapFrag = glsl`
 precision mediump float;
 
