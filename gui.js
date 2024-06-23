@@ -39,6 +39,16 @@ class GuiButton{
     }
 }
 
+class GuiTextbox{
+    constructor(text,container){
+        this.textbox = createInput(text,'number');
+        this.textbox.parent(container);
+    }
+    value(){
+        return this.textbox.value();
+    }
+}
+
 class GuiCheckbox{
     constructor(text,state,container){
         this.checkbox = createCheckbox(text,state);

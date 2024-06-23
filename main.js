@@ -69,17 +69,23 @@ const viewPresets = [
         scale: 500
     },
     {
-        name: "West Oakland",
-        x: 800,
-        y: 1000,
-        scale: 2000
+        name: "Berkeley/Oakland",
+        x: 1200,
+        y: 1450,
+        scale: 3000
     },
     {
-        name: "Berkeley",
-        x: 800,
-        y: 1000,
-        scale: 2000
+        name: "Richmond",
+        x: 1400,
+        y: 1850,
+        scale: 3000
     },
+    {
+        name: "Antioch",
+        x: -100,
+        y: 700,
+        scale: 1000
+    }
 ];
 
 class DemographicVis{
@@ -200,8 +206,6 @@ function setup_DevMode(){
     // tractOutlines.end();
     // saveCanvas(tractOutlines, 'censusTractOutlines.png','png');
 
-
-
     flowField = new FlowField(0);
     flowField.calculateAttractors(NUMBER_OF_ATTRACTORS);
 }
@@ -232,8 +236,7 @@ function setup(){
     //create canvas and grab webGL context
     mainCanvas = createCanvas(700,700,WEBGL);
     gl = mainCanvas.GL;
-    randomShader = createShader(defaultVert,randomFrag);
-
+    randomShader = createShader(updateParticleDataVert,randomFrag);
 
     if(devMode)
         setup_DevMode();
@@ -243,20 +246,13 @@ function setup(){
     initGL();
 
     presets[0].setActive(0,flowField);
+    background(255);
 }
 
 function draw(){
     flowField.updateParametersFromGui();
     if(flowField.isActive){
         flowField.updateParticles();
-        flowField.renderGL();
-        if(flowField.showingData)
-            flowField.renderData();
-        if(flowField.renderAs){
-            flowField.renderAttractors();
-        }
-        if(flowField.renderRs){
-            flowField.renderRepulsors();
-        }
+        flowField.render();
     }
 }

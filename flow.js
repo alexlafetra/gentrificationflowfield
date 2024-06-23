@@ -25,6 +25,11 @@ function fillFBOwithRandom(fbo,scale,seed){
     fbo.end();
 }
 
+function saveFlowFieldGif(){
+    background(255);
+    saveGif(presets[flowField.presetIndex].title+".gif", Number(flowField.gifLengthTextbox.value()),{units:'frames'})
+}
+
 class FlowField{
     constructor(presetIndex){
         //Parameters
@@ -53,29 +58,27 @@ class FlowField{
         this.repulsorArray = repulsors;
 
         //Shaders
-        this.updatePositionShader = createShader(updatePositionVert,updatePositionFrag);
-        this.updateAgeShader = createShader(ageVert,ageFrag);
-        this.updateVelShader = createShader(updateVelVert,updateVelFrag);
-        this.pointShader = createShader(drawParticlesVS,drawParticlesFS);
-        this.flowShader = createShader(flowMapVert,flowMapFrag);
+        this.updateParticleDataShader = createShader(updateParticleDataVert,updateParticleDataFrag);
+        this.updateAgeShader = createShader(updateParticleAgeVert,updateParticleAgeFrag);
+        this.drawParticlesShader = createShader(drawParticlesVS,drawParticlesFS);
+        this.calcFlowFieldShader = createShader(calculateFlowFieldVert,calculateFlowFieldFrag);
 
         //Texture Buffers
-        this.ageTexture = createFramebuffer({width:dataTextureDimension,height:dataTextureDimension,format:FLOAT,textureFiltering:NEAREST});
-        this.ageTextureBuffer = createFramebuffer({width:dataTextureDimension,height:dataTextureDimension,format:FLOAT,textureFiltering:NEAREST});
-        this.uPositionTexture = createFramebuffer({width:dataTextureDimension,height:dataTextureDimension,format:FLOAT,textureFiltering:NEAREST});
-        this.uPositionTextureBuffer = createFramebuffer({width:dataTextureDimension,height:dataTextureDimension,format:FLOAT,textureFiltering:NEAREST});
-        this.velTexture = createFramebuffer({width:dataTextureDimension,height:dataTextureDimension,format:FLOAT,textureFiltering:NEAREST});
-        this.velTextureBuffer = createFramebuffer({width:dataTextureDimension,height:dataTextureDimension,format:FLOAT,textureFiltering:NEAREST});
-        this.flowFieldTexture = createFramebuffer({width:this.size,height:this.size,format:FLOAT,textureFiltering:NEAREST});
-        this.trailLayer = createFramebuffer({width:this.size,height:this.size,format:FLOAT});
+        this.particleAgeTexture = createFramebuffer({width:dataTextureDimension,height:dataTextureDimension,format:FLOAT,textureFiltering:NEAREST,depth:false});
+        this.particleAgeTextureBuffer = createFramebuffer({width:dataTextureDimension,height:dataTextureDimension,format:FLOAT,textureFiltering:NEAREST,depth:false});
+        this.particleDataTexture = createFramebuffer({width:dataTextureDimension,height:dataTextureDimension,format:FLOAT,textureFiltering:NEAREST,depth:false});
+        this.particleDataTextureBuffer = createFramebuffer({width:dataTextureDimension,height:dataTextureDimension,format:FLOAT,textureFiltering:NEAREST,depth:false});
+        this.flowFieldTexture = createFramebuffer({width:this.size,height:this.size,format:FLOAT,textureFiltering:NEAREST,depth:false});
+        this.particleMask = createFramebuffer({width:mainCanvas.width,height:mainCanvas.height,depth:false});
 
-        this.particleMask = createFramebuffer({width:mainCanvas.width,height:mainCanvas.height});
+        this.particleCanvas = createFramebuffer({width:this.size,height:this.size,format:FLOAT,depth:false});
+        this.drawFBO = createFramebuffer({width:this.size,height:this.size,format:FLOAT,depth:false});
 
+        //give this.particleMask the correct section of the particle mask
         this.updateParticleMask();
-
+        //add sliders, GUI to the DOM
         this.initGui();
-
-        //set up the field
+        //Initialize particle vel/positions w/ random noise
         this.resetParticles();
     }
     //updates the particle mask, the HOLC tract outlines, and the census outlines
@@ -163,6 +166,7 @@ class FlowField{
         this.chartEquation.addClass('chart_attractor_equation');
         this.chartEquation.parent(this.controlPanel);
 
+        //color pickers
         this.repulsionColorPicker = createColorPicker(this.repulsionColor);
         this.repulsionColorPicker.parent(this.controlPanel);
         this.attractionColorPicker = createColorPicker(this.attractionColor);
@@ -184,17 +188,24 @@ class FlowField{
         this.showAttractorsCheckbox = new GuiCheckbox("Show Attractors",this.renderAs,this.controlPanel);
         this.showRepulsorsCheckbox = new GuiCheckbox("Show Repulsors",this.renderRs,this.controlPanel);
 
+        //preset data selector
         let options = [];
         for(let i = 0; i<presets.length; i++){
             options.push(presets[i].title);
         }
         this.presetSelector = new FlowFieldSelector(options,this.presetIndex,"Demographic Data",this.controlPanel);
+
+        //preset view selector
         const geoOptions = [];
         for(let view of viewPresets){
             geoOptions.push(view.name);
         }
         this.geoScaleSelector = new FlowFieldSelector(geoOptions,0,"View",this.controlPanel);
        
+        //save gif button
+        this.saveGifButton = new GuiButton("Save GIF", saveFlowFieldGif,this.controlPanel);
+        this.gifLengthTextbox = new GuiTextbox("30",this.controlPanel);
+
         this.controlPanel.parent(gui);
     }
     updateParametersFromGui(){
@@ -234,9 +245,7 @@ class FlowField{
             offset = {x:viewPresets[index].x,y:viewPresets[index].y};
             scale = {x:viewPresets[index].scale,y:-viewPresets[index].scale};
             this.activeViewPreset = index;
-            this.trailLayer.begin();
-            clear();
-            this.trailLayer.end();
+            background(255);
             this.updateParticleMask();
             this.updateFlow();
         }
@@ -246,79 +255,61 @@ class FlowField{
         //Flow field data is stored as attractors(x,y) => r,g; repulsors(x,y) => b,a;
         this.flowFieldTexture.begin();
         //so you need to clear all the color data each frame
-        background(0,0);
-        shader(this.flowShader);
+        clear();
+        shader(this.calcFlowFieldShader);
         //just a note: attractors and repulsors are FLAT arrays of x,y,strength values
         //Which means they're just a 1x(nx3) flat vector, not an nx3 multidimensional vector
-        this.flowShader.setUniform('uCoordinateOffset',[offset.x/mainCanvas.width+0.5,offset.y/mainCanvas.height+0.5]);
-        this.flowShader.setUniform('uScale',scale.x);
-        this.flowShader.setUniform('uDimensions',mainCanvas.width);
-        this.flowShader.setUniform('uAttractors',this.attractorArray);
-        this.flowShader.setUniform('uRepulsors',this.repulsorArray);
-        this.flowShader.setUniform('uAttractionStrength',this.attractionStrength);
-        this.flowShader.setUniform('uRepulsionStrength',this.repulsionStrength);
+        this.calcFlowFieldShader.setUniform('uCoordinateOffset',[offset.x/mainCanvas.width+0.5,offset.y/mainCanvas.height+0.5]);//adjusting coordinate so they're between 0,1 (instead of -width/2,+width/2)
+        this.calcFlowFieldShader.setUniform('uScale',scale.x);
+        this.calcFlowFieldShader.setUniform('uDimensions',mainCanvas.width);
+        this.calcFlowFieldShader.setUniform('uAttractors',this.attractorArray);
+        this.calcFlowFieldShader.setUniform('uRepulsors',this.repulsorArray);
+        this.calcFlowFieldShader.setUniform('uAttractionStrength',this.attractionStrength);
+        this.calcFlowFieldShader.setUniform('uRepulsionStrength',this.repulsionStrength);
         rect(-this.flowFieldTexture.width/2,-this.flowFieldTexture.height/2,this.flowFieldTexture.width,this.flowFieldTexture.height);
         this.flowFieldTexture.end();
     }
-    updatePos(){
-        this.uPositionTextureBuffer.begin();
-        shader(this.updatePositionShader);
-        this.updatePositionShader.setUniform('uParticleVelTexture',this.velTexture);
-        this.updatePositionShader.setUniform('uFlowFieldTexture',this.flowFieldTexture);
-        this.updatePositionShader.setUniform('uParticlePosTexture',this.uPositionTexture);
-        this.updatePositionShader.setUniform('uDamp',this.velDampValue/10.0);
-        this.updatePositionShader.setUniform('uRandomScale',this.randomAmount);
-        this.updatePositionShader.setUniform('uTime',millis()%3000);
-        this.updatePositionShader.setUniform('uAgeLimit',this.particleAgeLimit/100.0);
-        this.updatePositionShader.setUniform('uParticleAgeTexture',this.ageTexture);
-        this.updatePositionShader.setUniform('uParticleTrailTexture',this.trailLayer);
-        this.updatePositionShader.setUniform('uParticleMask',this.particleMask);
-        this.updatePositionShader.setUniform('uUseMaskTexture',this.maskParticles);
-        quad(-1,-1,1,-1,1,1,-1,1);//upside down bc the textures get flipped
-        this.uPositionTextureBuffer.end();
-        [this.uPositionTexture,this.uPositionTextureBuffer] = [this.uPositionTextureBuffer,this.uPositionTexture];
-    }
-    updateVel(){
-        this.velTextureBuffer.begin();
-        shader(this.updateVelShader);
-        this.updateVelShader.setUniform('uParticlePos',this.uPositionTexture);
-        this.updateVelShader.setUniform('uFlowFieldTexture',this.flowFieldTexture);
-        quad(-1,-1,1,-1,1,1,-1,1);//upside down bc the textures get flipped
-        this.velTextureBuffer.end();
-        [this.velTexture,this.velTextureBuffer] = [this.velTextureBuffer,this.velTexture];
+    updateParticleData(){
+        this.particleDataTextureBuffer.begin();
+        clear();
+        shader(this.updateParticleDataShader);
+        this.updateParticleDataShader.setUniform('uParticleVelTexture',this.velTexture);
+        this.updateParticleDataShader.setUniform('uFlowFieldTexture',this.flowFieldTexture);
+        this.updateParticleDataShader.setUniform('uParticlePosTexture',this.particleDataTexture);
+        this.updateParticleDataShader.setUniform('uDamp',this.velDampValue/10.0);
+        this.updateParticleDataShader.setUniform('uRandomScale',this.randomAmount);
+        this.updateParticleDataShader.setUniform('uTime',(millis()%100));
+        // this.updateParticleDataShader.setUniform('uTime',2.0);
+
+        this.updateParticleDataShader.setUniform('uAgeLimit',this.particleAgeLimit/100.0);
+        this.updateParticleDataShader.setUniform('uParticleAgeTexture',this.particleAgeTexture);
+        this.updateParticleDataShader.setUniform('uParticleTrailTexture',this.particleCanvas);
+        this.updateParticleDataShader.setUniform('uParticleMask',this.particleMask);
+        this.updateParticleDataShader.setUniform('uUseMaskTexture',this.maskParticles);
+        quad(-1,-1,1,-1,1,1,-1,1);
+        this.particleDataTextureBuffer.end();
+        [this.particleDataTexture,this.particleDataTextureBuffer] = [this.particleDataTextureBuffer,this.particleDataTexture];
     }
     updateAge(){
-        this.ageTextureBuffer.begin();
+        this.particleAgeTextureBuffer.begin();
         shader(this.updateAgeShader);
         this.updateAgeShader.setUniform('uAgeLimit',this.particleAgeLimit/100.0);
-        this.updateAgeShader.setUniform('uAgeTexture',this.ageTexture);
-        quad(-1,-1,1,-1,1,1,-1,1);//upside down bc the textures get flipped
-        this.ageTextureBuffer.end();
-        [this.ageTexture,this.ageTextureBuffer] = [this.ageTextureBuffer,this.ageTexture];
+        this.updateAgeShader.setUniform('uAgeTexture',this.particleAgeTexture);
+        quad(-1,-1,1,-1,1,1,-1,1);
+        this.particleAgeTextureBuffer.end();
+        [this.particleAgeTexture,this.particleAgeTextureBuffer] = [this.particleAgeTextureBuffer,this.particleAgeTexture];
     }
     resetParticles(){
         let r = random();
-        fillFBOwithRandom(this.uPositionTexture,1.0,r);
-        fillFBOwithRandom(this.uPositionTextureBuffer,1.0,r);
+        fillFBOwithRandom(this.particleDataTexture,1.0,r);
+        fillFBOwithRandom(this.particleDataTextureBuffer,1.0,r);
         let r1 = random();
-        fillFBOwithRandom(this.ageTexture,this.particleAgeLimit/100.0,r1);
-        fillFBOwithRandom(this.ageTextureBuffer,this.particleAgeLimit/100.0,r1);
-        let r2 = random();
-        fillFBOwithRandom(this.velTexture,1.0,r2);
-        fillFBOwithRandom(this.velTextureBuffer,1.0,r2);
+        fillFBOwithRandom(this.particleAgeTexture,this.particleAgeLimit/100.0,r1);
+        fillFBOwithRandom(this.particleAgeTextureBuffer,this.particleAgeLimit/100.0,r1);
     }
     renderGL(){
-        if(this.showTractsCheckbox.value()){
-            renderTransformedImage(tractOutlines);
-        }
-        if(this.showHOLCCheckbox.value()){
-            renderTransformedImage(holcTexture);
-        }
-        this.trailLayer.begin();
-
-        //fade the trails
-        background(255,this.trailDecayValue*255.0);
-
+        this.particleCanvas.begin();
+        clear();
         //setting ID attributes (or trying to at least)
         gl.bindBuffer(gl.ARRAY_BUFFER, idBuffer);
         gl.enableVertexAttribArray(drawParticlesProgLocs.id);
@@ -332,37 +323,50 @@ class FlowField{
         );
         //setting the texture samples (this was what was fucked up! you need to set the active texture, then bind it)
         gl.activeTexture(gl.TEXTURE0);
-        gl.bindTexture(gl.TEXTURE_2D, this.uPositionTexture.colorTexture);
+        gl.bindTexture(gl.TEXTURE_2D, this.particleDataTexture.colorTexture);
         gl.activeTexture(gl.TEXTURE1);
         gl.bindTexture(gl.TEXTURE_2D, this.flowFieldTexture.colorTexture);
-
         //running the particle-drawing shader
-        shader(this.pointShader);
-        this.pointShader.setUniform('uPositionTexture',this.uPositionTexture);
-        this.pointShader.setUniform('uColorTexture',this.flowFieldTexture);
-        this.pointShader.setUniform('uRepulsionColor',[this.repulsionColor._array[0],this.repulsionColor._array[1],this.repulsionColor._array[2],1.0]);
-        this.pointShader.setUniform('uAttractionColor',[this.attractionColor._array[0],this.attractionColor._array[1],this.attractionColor._array[2],1.0]);
-        this.pointShader.setUniform('uTextureDimensions',[dataTextureDimension,dataTextureDimension]);
-        this.pointShader.setUniform('uParticleSize',this.pointSize);
+        shader(this.drawParticlesShader);
+        this.drawParticlesShader.setUniform('uPositionTexture',this.particleDataTexture);
+        this.drawParticlesShader.setUniform('uColorTexture',this.flowFieldTexture);
+        this.drawParticlesShader.setUniform('uRepulsionColor',[this.repulsionColor._array[0],this.repulsionColor._array[1],this.repulsionColor._array[2],1.0]);
+        this.drawParticlesShader.setUniform('uAttractionColor',[this.attractionColor._array[0],this.attractionColor._array[1],this.attractionColor._array[2],1.0]);
+        this.drawParticlesShader.setUniform('uTextureDimensions',[dataTextureDimension,dataTextureDimension]);
+        this.drawParticlesShader.setUniform('uParticleSize',this.pointSize);
         gl.drawArrays(gl.POINTS,0,this.particleCount);
-        this.trailLayer.end();
-        if(this.showFlowCheckbox.value()){
-            fill(0);
-            rect(-height/2,-width/2,height,width);
-            image(this.flowFieldTexture,-height/2,-height/2,width,height);
-        }
-        image(this.trailLayer,-width/2,-height/2,width,height);
+        this.particleCanvas.end();
+
+        this.drawFBO.begin();
+        background(255,this.trailDecayValue*255.0);//make the old image of particles slightly transparent
+        image(this.particleCanvas,-this.drawFBO.width/2,-this.drawFBO.height/2,this.drawFBO.width,this.drawFBO.height);//draw the particles
+        this.drawFBO.end();
+
+        image(this.drawFBO,-width/2,-height/2,width,height);
     }
     renderData(){
-        image(this.velTexture,-width/2,-height/2,width/8,height/8);
-        image(this.uPositionTexture,-3*width/8,-height/2,width/8,height/8);
-        image(this.flowFieldTexture,-width/4,-height/2,width/8,height/8);
-        image(this.particleMask,-width/8,-height/2,width/8,height/8);
+        image(this.particleDataTexture,-width/2,-height/2,width/3,height/3);
+        image(this.flowFieldTexture,-width/2,-height/2+height/3,width/3,height/3);
+        image(this.particleMask,-width/2,-height/2+2*height/3,width/3,height/3);
+    }
+    render(){
+        if(this.showTractsCheckbox.value())
+            renderTransformedImage(tractOutlines);
+        if(this.showHOLCCheckbox.value())
+            renderTransformedImage(holcTexture);
+        this.renderGL();
+        if(this.showingData)
+            this.renderData();
+        if(this.renderAs)
+            this.renderAttractors();
+        if(this.renderRs)
+            flowField.renderRepulsors();
+        if(this.showFlowCheckbox.value())
+            image(this.flowFieldTexture,-height/2,-height/2,width,height);
     }
     updateParticles(){
         this.updateAge();
-        this.updatePos();
-        this.updateVel();
+        this.updateParticleData();
     }
     calculateAttractors(n){
         //you need to make sure these don't return any points with infinite strength!
