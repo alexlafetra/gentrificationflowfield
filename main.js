@@ -12,32 +12,53 @@ let tractOutlines;
 let idBuffer;
 let ids;
 
+let dataTextureDimension = 200;
+let randomShader;
+let drawParticlesProgram;
+let drawParticlesProgLocs;
+
+
 
 //Presets
-let whiteComparisonPreset;
-let blackComparisonPreset;
-let asianComparisonPreset;
-let whiteProportionComparisonPreset;
-let blackProportionComparisonPreset;
-let asianProportionComparisonPreset;
-let whiteRatioPreset;
-let blackRatioPreset;
-let asianRatioPreset;
-let rentBurdenPreset;
-
 let presets;
 
-// Look for moving/migration data
-
 //20 is a good base number
-let NUMBER_OF_ATTRACTORS = 300;
-// let NUMBER_OF_ATTRACTORS = 20;
-const NUMBER_OF_FIELDS = 1;
+const NUMBER_OF_ATTRACTORS = 300;
 
 //controls whether or not the sim will load with prerendered data/choropleths
 //or with the full dataset, allowing you to explore/experiment
 // let devMode = true;
 let devMode = false;
+
+const viewPresets = [
+    {
+        name: "Bay Area",
+        x: 125,
+        y: 125,
+        scale: 200
+    },
+    {
+        name: "San Francisco",
+        x: 0,
+        y: 0,
+        scale: 1
+    },
+    {
+        name: "San Jose",
+        x: 32,
+        y: 125,
+        scale: 500
+    },
+    {
+        name: "West Oakland",
+        x: 32,
+        y: 125,
+        scale: 500
+    }
+
+];
+
+let activeViewPreset = 0;
 
 class DemographicVis{
     constructor(title,description,data){
@@ -55,10 +76,9 @@ class DemographicVis{
 }
 
 class Preset{
-    constructor(title,description,map,aPoints,rPoints){
+    constructor(title,description,aPoints,rPoints){
         this.title = title;
         this.description = description;
-        this.mapIndex = map;
         this.attractors = aPoints;
         this.repulsors = rPoints;
     }
@@ -71,63 +91,73 @@ class Preset{
     }
 }
 
-class GeographyPreset{
-    constructor(geometryOffset){
-        this.x = geometryOffset.x;
-        this.y = geometryOffset.y;
-        this.scale = {x:geometryOffset.scale.x,y:geometryOffset.scale.y};
-    }
-}
-function saveFlowField(){
-    saveCanvas(flowField.flowFieldTexture,'flowfield.png','png');
-}
-function saveChoropleth(){
-    saveCanvas(flowField.mapTexture, 'choropleth.png','png');
-}
-function saveMask(){
-    saveCanvas(flowField.particleMask, 'flowFieldMask.png','png');
-}
 function saveTracts(){
     saveJSON(bayTracts,"tracts.json");
 }
-function saveOutlines(){
-    saveCanvas(tractOutlines, 'flowFieldMask.png','png');
+
+//you gotta be in devmode for this!
+//renders tracts to a canvas, then saves it
+function saveTractOutlines(){
+    const temp = createFramebuffer({width:6000,height:6000});
+    const oldScale = scale;
+    // scale.x*=1;
+    // scale.y*=1;
+    temp.begin();
+    scale(5,5,5);
+    background(0,0);
+    strokeWeight(1);
+    renderTractOutlines(geoOffset,color(0));
+    temp.end();
+    saveCanvas(temp, 'censusTractOutlines.png','png');
+}
+
+function saveHOLCOutlines(){
+    const temp = createFramebuffer({width:1000,height:1000});
+    const oldScale = scale;
+    // scale.x*=5;
+    // scale.y*=5;
+    temp.begin();
+    background(0,0);
+    renderHOLCTracts(geoOffset,oakHolcTracts);
+    renderHOLCTracts(geoOffset,sfHolcTracts);
+    renderHOLCTracts(geoOffset,sjHolcTracts);
+    temp.end();
+    saveCanvas(temp, 'HOLCTracts.png','png');
 }
 
 function loadPresetMaps(){
     presetFlowMask = loadImage("data/Prerendered/flowFieldMask.png");
-    tractOutlines = loadImage("data/Prerendered/tractOutlines.png");
+    tractOutlines = loadImage("data/Prerendered/censusTractOutlines.png");
     holcTexture = loadImage("data/Prerendered/HOLC_Red.png");
-}
-
-function logAttractorsDevmode(){
-    let count = 0;
-    let string;
-    for(let i of presets){
-        i.setActive(count,flowField);
-        string += flowField.logFlowFieldData("preset"+count);
-        count++;
-    }
-    console.log(string);
 }
 
 function preload(){
     if(devMode)
         loadCensusCSVData();
-    else
-        loadPresetMaps();
+    loadPresetMaps();
 }
-
-//20 is about the limit
-function gatherDemographicMaxMins(n){
-    let points = getSignificantPoints(n);
-    points = points.concat(getLeastSignificantPoints(n));
-    return points;
-}
-
 
 function randomColor(){
     return color(random(0,255),random(0,255),random(0,255));
+}
+
+function renderTransformedImage(img,sf = mainCanvas.width*2/5){
+    const rS = (scale.x/sf);//relative scale, bc the png is scaled already
+    const dx = -3*mainCanvas.width/4*rS+offset.x;
+    const dy = -3*mainCanvas.height/4*rS+offset.y;
+    /*
+        these ^^ are the condensed versions of: -mainCanvas.width/2*rS+offset.x-mainCanvas.width/4*rS
+        Which is basically centering the image on the webGL canvas, scaling that centering by the image scale
+        Adding the offset, then subtracting the starting offset (bc the png is already offset)
+    */
+    const dw = (mainCanvas.width)*rS;
+    const dh = (mainCanvas.height)*rS;
+    const sx = 0;
+    const sy = 0;
+    const sw = img.width;
+    const sh = img.height;
+    image(img,dx,dy,dw,dh,
+            sx,sy,sw,sh);
 }
 
 function setup_DevMode(){
@@ -139,74 +169,22 @@ function setup_DevMode(){
     //setting the offsets so that the first point in the first shape is centered
     let samplePoint = bayTracts[0].geometry.coordinates[0][0][0];
     geoOffset = {x:-samplePoint[0],y:-samplePoint[1]};
-
     //the manual offset
     offset = {x:mainCanvas.width/4,y:mainCanvas.height/4};
-
-    //manually adjusting the scale to taste
     let s = mainCanvas.width*2/5;
-    scale = {x:s,y:s*(-1)};
+    scale = {x:s,y:s*(-1)};//manually adjusting the scale to taste
 
-    tractOutlines = createFramebuffer({width:width,height:height});
-    holcTexture = createFramebuffer(width,height);
-
-    setupMap();
-
-    flowField = new FlowField(mask,0,null,randomColor());
+    flowField = new FlowField(0);
     flowField.calculateAttractors(NUMBER_OF_ATTRACTORS);
 }
 
 function setup_Prerendered(){
-    whiteComparisonPreset = new Preset("Change in White Population",
-                                            "P<sub>White 2000</sub> - P<sub>White 2020</sub>",0,preset0Attractors,preset0Repulsors);
-    blackComparisonPreset = new Preset("Change in Black Population",
-                                            "P<sub>Black 2000</sub> - P<sub>Black 2020</sub>",1,preset1Attractors,preset1Repulsors);
-    asianComparisonPreset = new Preset("Change in Asian Population",
-                                            "P<sub>Asian 2000</sub> - P<sub>Asian 2020</sub>",2,preset2Attractors,preset2Repulsors);
-    whiteProportionComparisonPreset = new Preset("Change In Proportion of Population Identifying as White",
-                                            "P<sub>White 2000</sub> / P<sub>Total 2000</sub> - P<sub>White 2020</sub> / P<sub>Total 2020</sub>",3,preset3Attractors,preset3Repulsors);
-    blackProportionComparisonPreset = new Preset("Change In Proportion of Population Identifying as Black",
-                                            "P<sub>Black 2000</sub> / P<sub>Total 2000</sub> - P<sub>Black 2020</sub> / P<sub>Total 2020</sub>",4,preset4Attractors,preset4Repulsors);
-    asianProportionComparisonPreset = new Preset("Change In Proportion of Population Identifying as Asian",
-                                            "P<sub>Asian 2000</sub> / P<sub>Total 2000</sub> - P<sub>Asian 2020</sub> / P<sub>Total 2020</sub>",5,preset5Attractors,preset5Repulsors);
-
-    rentBurden1= new Preset("Renters spending less than 10% of monthly income","idk",9,preset6Attractors,preset6Repulsors);
-    rentBurden2= new Preset("Renters spending 10-14% of monthly income","idk",10,preset7Attractors,preset7Repulsors);
-    rentBurden3= new Preset("Renters spending 15-19% of monthly income","idk",11,preset8Attractors,preset8Repulsors);
-    rentBurden4= new Preset("Renters spending 20-24% of monthly income","idk",12,preset9Attractors,preset9Repulsors);
-    rentBurden5= new Preset("Renters spending 25-29% of monthly income","idk",13,preset10Attractors,preset10Repulsors);
-    rentBurden6= new Preset("Renters spending 30-34% of monthly income","idk",14,preset11Attractors,preset11Repulsors);
-    rentBurden7= new Preset("Renters spending 35-39% of monthly income","idk",15,preset12Attractors,preset12Repulsors);
-    rentBurden8= new Preset("Renters spending 40-49% of monthly income","idk",16,preset13Attractors,preset13Repulsors);
-    rentBurden9= new Preset("Renters spending more than 50% of monthly income","idk",17,preset14Attractors,preset14Repulsors);
-
-    presets = [
-        whiteProportionComparisonPreset,
-        blackProportionComparisonPreset,
-        asianProportionComparisonPreset,
-        whiteComparisonPreset,
-        blackComparisonPreset,
-        asianComparisonPreset,
-        rentBurden1,
-        rentBurden2,
-        rentBurden3,
-        rentBurden4,
-        rentBurden5,
-        rentBurden6,
-        rentBurden7,
-        rentBurden8,
-        rentBurden9
-    ];
-
-    //creating map mask
-    mask.begin();
-    image(presetFlowMask,-mask.width/2,-mask.height/2,mask.width,mask.height);
-    mask.end();
-    flowField = new FlowField(mask,0,null,randomColor());
-}
-
-function mousePressed(){
-    // flowField.logClosestAttractorToMouse();
+    createPremadePresets();
+    //the manual offset
+    offset = {x:mainCanvas.width/4,y:mainCanvas.height/4};
+    let s = mainCanvas.width*2/5;
+    scale = {x:s,y:s*(-1)};//manually adjusting the scale to taste
+    flowField = new FlowField(0);
 }
 
 function logPresets(){
@@ -224,31 +202,18 @@ function logPresets(){
 
 function setup(){
     //create canvas and grab webGL context
-    // setAttributes('antialias',false);
-
-    // pixelDensity(1);
     mainCanvas = createCanvas(500,500,WEBGL);
     gl = mainCanvas.GL;
     randomShader = createShader(defaultVert,randomFrag);
 
-    mask = createFramebuffer({width:width,height:height});
-    
     if(devMode)
         setup_DevMode();
     else
         setup_Prerendered();
 
-    // saveTable(rentData2000,'CONVERTED_Tracts_by_Rent_2000.csv');
-
     initGL();
 
     presets[0].setActive(0,flowField);
-}
-
-function renderFlowFields(){
-    for(let i = 0; i<flowFields.length; i++){
-        image(flowFields[i].flowFieldTexture,-width/2+i*width/4,height/2-height/4,width/4,height/4);
-    }
 }
 
 function draw(){

@@ -176,6 +176,48 @@ function createPresets(){
         rentBurden9
     ];
 }
+function createPremadePresets(){
+  //Preset color/flows
+  whiteProportionComparisonPreset = new Preset("Change In Proportion of White Population", "P<sub>White 2000</sub> / P<sub>Total 2000</sub> - P<sub>White 2020</sub> / P<sub>Total 2020</sub>",preset0Attractors,preset0Repulsors);
+  blackProportionComparisonPreset = new Preset("Change In Proportion of Black Population","P<sub>Black 2000</sub> / P<sub>Total 2000</sub> - P<sub>Black 2020</sub> / P<sub>Total 2020</sub>",preset1Attractors,preset1Repulsors);
+  asianProportionComparisonPreset = new Preset("Change In Proportion of Asian Population","P<sub>Asian 2000</sub> / P<sub>Total 2000</sub> - P<sub>Asian 2020</sub> / P<sub>Total 2020</sub>",preset2Attractors,preset2Repulsors);
+  hispOrLatinoProportionComparisonPreset = new Preset("Change In Proportion of Hispanic or Latino Population","P<sub>Hisp. or Latino 2000</sub> / P<sub>Total 2000</sub> - P<sub>Hisp. or Latino 2020</sub> / P<sub>Total 2020</sub>",preset3Attractors,preset3Repulsors);
+
+  whiteComparisonPreset = new Preset("Change in White Population","P<sub>White 2020</sub> - P<sub>White 2000</sub>",preset4Attractors,preset4Repulsors);
+  blackComparisonPreset = new Preset("Change in Black Population","P<sub>Black 2020</sub> - P<sub>Black 2000</sub>",preset5Attractors,preset5Repulsors);
+  asianComparisonPreset = new Preset("Change in Asian Population","P<sub>Asian 2020</sub> - P<sub>Asian 2000</sub>",preset6Attractors,preset6Repulsors);
+  hispOrLatinoComparisonPreset = new Preset("Change in Hispanic or Latino Population","P<sub>Hisp. or Latino 2020</sub> - P<sub>Hisp. or Latino 2000</sub>",preset7Attractors,preset7Repulsors);
+
+  rentBurden1 = new Preset("Change in Renters spending less than 10% of monthly income","",preset8Attractors,preset8Repulsors);
+  rentBurden2 = new Preset("Change in Renters spending 10-14% of monthly income","",preset9Attractors,preset9Repulsors);
+  rentBurden3 = new Preset("Change in Renters spending 15-19% of monthly income","",preset10Attractors,preset10Repulsors);
+  rentBurden4 = new Preset("Change in Renters spending 20-24% of monthly income","",preset11Attractors,preset11Repulsors);
+  rentBurden5 = new Preset("Change in Renters spending 25-29% of monthly income","",preset12Attractors,preset12Repulsors);
+  rentBurden6 = new Preset("Change in Renters spending 30-34% of monthly income","",preset13Attractors,preset13Repulsors);
+  rentBurden7 = new Preset("Change in Renters spending 35-39% of monthly income","",preset14Attractors,preset14Repulsors);
+  rentBurden8 = new Preset("Change in Renters spending 40-49% of monthly income","",preset15Attractors,preset15Repulsors);
+  rentBurden9 = new Preset("Change in Renters spending more than 50% of monthly income","",preset16Attractors,preset16Repulsors);
+
+  presets = [
+      whiteProportionComparisonPreset,
+      blackProportionComparisonPreset,
+      asianProportionComparisonPreset,
+      hispOrLatinoProportionComparisonPreset,
+      whiteComparisonPreset,
+      blackComparisonPreset,
+      asianComparisonPreset,
+      hispOrLatinoComparisonPreset,
+      rentBurden1,
+      rentBurden2,
+      rentBurden3,
+      rentBurden4,
+      rentBurden5,
+      rentBurden6,
+      rentBurden7,
+      rentBurden8,
+      rentBurden9
+  ];
+}
 
 function getTopNTracts(n,func){
     let vals = bayTracts.toSorted((a,b) => {
@@ -230,8 +272,10 @@ function getSignificantPoints(n,func){
     let points = [];
     for(let i = 0; i<min(n,tracts.length); i++){
         let point = {
-            x:((tracts[i].centroid.x+geoOffset.x)*scale.x+offset.x)/width+0.5,
-            y:((tracts[i].centroid.y+geoOffset.y)*scale.y+offset.y)/height+0.5,
+            // x:((tracts[i].centroid.x+geoOffset.x)*scale.x)/width+0.5,
+            // y:((tracts[i].centroid.y+geoOffset.y)*scale.y)/height+0.5,
+            x:((tracts[i].centroid.x+geoOffset.x)),
+            y:((tracts[i].centroid.y+geoOffset.y)),
             strength:func(tracts[i]),
             tractName:tracts[i].properties.NAMELSAD
         }
@@ -239,13 +283,16 @@ function getSignificantPoints(n,func){
     }
     return points;
 }
+
 function getLeastSignificantPoints(n,func){
     let tracts = getBottomNTracts(n,func);
     let points = [];
     for(let i = 0; i<n; i++){
         let point = {
-            x:((tracts[i].centroid.x+geoOffset.x)*scale.x+offset.x)/width+0.5,
-            y:((tracts[i].centroid.y+geoOffset.y)*scale.y+offset.y)/height+0.5,
+            // x:((tracts[i].centroid.x+geoOffset.x)*scale.x)/width+0.5,
+            // y:((tracts[i].centroid.y+geoOffset.y)*scale.y)/height+0.5,
+            x:((tracts[i].centroid.x+geoOffset.x)),
+            y:((tracts[i].centroid.y+geoOffset.y)),
             strength:func(tracts[i])
         }
         points.push(point);

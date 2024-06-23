@@ -370,32 +370,13 @@ function setupMapData(){
     calculateGeographicCenters();
 }
 
-function setupMap(){
-    //drawing tract outlines to an overlay
-    tractOutlines.begin();
-    strokeWeight(1);
-    renderTractOutlines(geoOffset,color(100,180));
-    tractOutlines.end();
-
-
-    holcTexture.begin();
-    renderHOLCTracts(geoOffset,oakHolcTracts);
-    renderHOLCTracts(geoOffset,sfHolcTracts);
-    renderHOLCTracts(geoOffset,sjHolcTracts);
-    holcTexture.end();
-
-    //creating map mask
-    mask.begin();
-    background(0,255);
-    renderTracts(geoOffset,() => {fill(255,255,255)});
-    mask.end();
-}
-
-function setViewToSanFrancisco(){
-    let s = mainCanvas.width;
+function setView(x,y,s){
     scale = {x:s,y:-s};
-    offset = {x:mainCanvas.width/16,y:mainCanvas.height/4};
-    setupMap();
-    flowField.calculateAttractors(NUMBER_OF_ATTRACTORS);
+    offset = {x:x,y:y};
+    flowField.updateParticleMask();
     flowField.updateFlow();
+}
+function setViewToSanJose(){
+    let s = mainCanvas.width;
+    setView(width/16,height/4,s);
 }

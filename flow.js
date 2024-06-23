@@ -1,8 +1,3 @@
-let dataTextureDimension = 200;
-let randomShader;
-let drawParticlesProgram;
-let drawParticlesProgLocs;
-
 function initGL(){
     drawParticlesProgram = webglUtils.createProgramFromSources(
         gl, [drawParticlesVS, drawParticlesFS]);
@@ -31,30 +26,26 @@ function fillFBOwithRandom(fbo,scale,seed){
 }
 
 class FlowField{
-    constructor(mask,presetIndex,map,c){
+    constructor(presetIndex){
         //Parameters
         this.particleCount = 40000;
         this.trailDecayValue = 0.04;
         this.pointSize = mainCanvas.width/1000;
-        this.opacity = 200;
         this.particleAgeLimit = 150;
         this.velDampValue = 0.004;
         this.forceStrength = 0.05;
-
         this.randomAmount = 0.1;
         this.repulsionStrength = 3.0;
         this.attractionStrength = 3.0;
-
         this.size = height;
-
-        this.presetIndex = presetIndex;
-
+        this.presetIndex = presetIndex;//index of the active preset
         this.maskParticles = true;
-
         this.isActive = true;
         this.showingData = false;
         this.renderAs = true;//render attractors
         this.renderRs = true;//render repulsors
+        this.repulsionColor = color(20,0,180);
+        this.attractionColor = color(255,0,120);
 
         //data
         this.attractorArray = attractors;
@@ -77,14 +68,22 @@ class FlowField{
         this.flowFieldTexture = createFramebuffer({width:this.size,height:this.size,format:FLOAT,textureFiltering:NEAREST});
         this.trailLayer = createFramebuffer({width:this.size,height:this.size,format:FLOAT});
 
-        this.particleMask = mask;
-        this.repulsionColor = color(20,0,180);
-        this.attractionColor = color(255,0,120);
+        this.particleMask = createFramebuffer({width:mainCanvas.width,height:mainCanvas.height});
+
+        this.updateParticleMask();
 
         this.initGui();
 
         //set up the field
         this.resetParticles();
+    }
+    //updates the particle mask, the HOLC tract outlines, and the census outlines
+    //by translating and scaling their source png's
+    updateParticleMask(){
+        this.particleMask.begin();
+        background(0);
+        renderTransformedImage(presetFlowMask)
+        this.particleMask.end();
     }
     logClosestAttractorToMouse(){
         let mouseVec = createVector(mouseX,mouseY);
@@ -104,8 +103,8 @@ class FlowField{
     }
     renderAttractors(){
         for(let i = 0; i<this.attractorArray.length; i+=3){
-            const x = (this.attractorArray[i]-0.5)*mainCanvas.width;
-            const y = (this.attractorArray[i+1]-0.5)*mainCanvas.height;
+            const x = (this.attractorArray[i])*scale.x+offset.x;
+            const y = -(this.attractorArray[i+1]*scale.x)+offset.y;
             let size = map(this.attractorArray[i+2],this.attractorArray[this.attractorArray.length-1],this.attractorArray[2],1,10);//scaling size based on the min/max size of attractors
             const alpha = map(size,1,10,0,255);
             if(this.attractorObjects[i]){
@@ -125,8 +124,8 @@ class FlowField{
     }
     renderRepulsors(){
         for(let i = 0; i<this.repulsorArray.length; i+=3){
-            const x = (this.repulsorArray[i]-0.5)*mainCanvas.width;
-            const y = (this.repulsorArray[i+1]-0.5)*mainCanvas.height;
+            const x = (this.repulsorArray[i])*scale.x+offset.x;
+            const y = -(this.repulsorArray[i+1]*scale.x)+offset.y;
             const size = map(this.repulsorArray[i+2],this.repulsorArray[this.repulsorArray.length-1],this.repulsorArray[2],10,1);//scaling size
             const alpha = map(size,1,10,0,255);
             if(this.repulsorObjects[i]){
@@ -189,8 +188,11 @@ class FlowField{
             options.push(presets[i].title);
         }
         this.presetSelector = new FlowFieldSelector(options,this.presetIndex,"Demographic Data",this.controlPanel);
-        const geoOptions = ["Entire Bay Area","San Francisco","West Oakland"];
-        this.geoScaleSelector = new FlowFieldSelector(geoOptions,this.geoPresetIndex,"Place",this.controlPanel);
+        const geoOptions = [];
+        for(let view of viewPresets){
+            geoOptions.push(view.name);
+        }
+        this.geoScaleSelector = new FlowFieldSelector(geoOptions,0,"Place",this.controlPanel);
        
         this.controlPanel.parent(gui);
     }
@@ -226,6 +228,14 @@ class FlowField{
         if(this.presetIndex != this.presetSelector.selected()){
             presets[this.presetSelector.selected()].setActive(this.presetSelector.selected(),this);
         }
+        if(this.activeViewPreset != this.geoScaleSelector.selected()){
+            let index = this.geoScaleSelector.selected();
+            offset = {x:viewPresets[index].x,y:viewPresets[index].y};
+            scale = {x:viewPresets[index].scale,y:-viewPresets[index].scale};
+            activeViewPreset = index;
+            this.updateParticleMask();
+            this.updateFlow();
+        }
     }
     updateFlow(){
         //ANY drawing to this texture will affect the flow field data
@@ -236,6 +246,9 @@ class FlowField{
         shader(this.flowShader);
         //just a note: attractors and repulsors are FLAT arrays of x,y,strength values
         //Which means they're just a 1x(nx3) flat vector, not an nx3 multidimensional vector
+        this.flowShader.setUniform('uCoordinateOffset',[offset.x/mainCanvas.width+0.5,offset.y/mainCanvas.height+0.5]);
+        this.flowShader.setUniform('uScale',scale.x);
+        this.flowShader.setUniform('uDimensions',mainCanvas.width);
         this.flowShader.setUniform('uAttractors',this.attractorArray);
         this.flowShader.setUniform('uRepulsors',this.repulsorArray);
         this.flowShader.setUniform('uAttractionStrength',this.attractionStrength);
@@ -293,10 +306,11 @@ class FlowField{
     }
     renderGL(){
         if(this.showTractsCheckbox.value()){
-            image(tractOutlines,-width/2,-height/2,width,height);
+            // image(tractOutlines,-width/2,-height/2,width,height);
+            renderTransformedImage(tractOutlines,2/10*mainCanvas.width);
         }
         if(this.showHOLCCheckbox.value()){
-            image(holcTexture,-width/2,-height/2,width,height);
+            renderTransformedImage(holcTexture);
         }
         this.trailLayer.begin();
 
@@ -340,6 +354,7 @@ class FlowField{
         image(this.velTexture,-width/2,-height/2,width/8,height/8);
         image(this.uPositionTexture,-3*width/8,-height/2,width/8,height/8);
         image(this.flowFieldTexture,-width/4,-height/2,width/8,height/8);
+        image(this.particleMask,-width/8,-height/2,width/8,height/8);
     }
     updateParticles(){
         this.updateAge();

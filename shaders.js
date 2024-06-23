@@ -296,22 +296,28 @@ uniform vec3 uRepulsors[`+NUMBER_OF_ATTRACTORS+glsl`];
 uniform float uAttractionStrength;
 uniform float uRepulsionStrength;
 
+uniform vec2 uCoordinateOffset;//offset
+uniform float uScale;//scale
+uniform float uDimensions;//dimensions of mainCanvas
+
 void main(){
     vec2 attraction = vec2(0.0);
     vec2 repulsion = vec2(0.0);
     //calculate attractors/repulsors
     for(int i = 0; i<`+NUMBER_OF_ATTRACTORS+glsl`; i++){
+        vec2 attractorCoord = vec2(uAttractors[i].x*uScale/uDimensions+uCoordinateOffset.x,-uAttractors[i].y*uScale/uDimensions+uCoordinateOffset.y);
+        vec2 repulsorCoord = vec2(uRepulsors[i].x*uScale/uDimensions+uCoordinateOffset.x,-uRepulsors[i].y*uScale/uDimensions+uCoordinateOffset.y);
+
         //add a vector pointing toward the attractor from this pixel
         //scaled by the inverse square of the distance AND the scale factor
-        float dA = distance(uAttractors[i].xy,vTexCoord);
-        attraction+=uAttractionStrength*(uAttractors[i].z)*(uAttractors[i].xy-vTexCoord)/(dA*dA);
-
+        float dA = distance(attractorCoord,vTexCoord);
+        attraction += uAttractionStrength*(uAttractors[i].z)*(attractorCoord-vTexCoord) / (dA*dA);
         //the reuplsion force points AWAY from the repulsor point
-        float dR = distance(uRepulsors[i].xy,vTexCoord);
-        repulsion+=uRepulsionStrength*(uRepulsors[i].z)*(vTexCoord-uRepulsors[i].xy)/(dR*dR);
+        float dR = distance(repulsorCoord,vTexCoord);
+        repulsion += uRepulsionStrength*(uRepulsors[i].z)*(vTexCoord-(repulsorCoord)) / (dR*dR);
     }
-    attraction/=`+NUMBER_OF_ATTRACTORS+glsl`.0;
-    repulsion/=`+NUMBER_OF_ATTRACTORS+glsl`.0;
+    attraction /= `+NUMBER_OF_ATTRACTORS+glsl`.0;
+    repulsion /= `+NUMBER_OF_ATTRACTORS+glsl`.0;
     //Storing both attraction and repulsion in the same texture
     gl_FragColor = vec4(attraction.x,attraction.y,repulsion.x,repulsion.y);
 
