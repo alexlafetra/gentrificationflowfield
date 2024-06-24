@@ -169,16 +169,30 @@ class FlowField{
         this.chartEquation.addClass('chart_attractor_equation');
         this.chartEquation.parent(this.controlPanel);
 
-        //color pickers
-        this.repulsionColorPicker = createColorPicker(this.repulsionColor);
-        this.repulsionColorPicker.parent(this.controlPanel);
-        this.attractionColorPicker = createColorPicker(this.attractionColor);
-        this.attractionColorPicker.parent(this.controlPanel);
+                //preset data selector
+        let options = [];
+        for(let i = 0; i<presets.length; i++){
+            options.push(presets[i].title);
+        }
+        this.presetSelector = new FlowFieldSelector(options,this.presetIndex,"Demographic Data",this.controlPanel);
+
+        //preset view selector
+        const geoOptions = [];
+        for(let view of viewPresets){
+            geoOptions.push(view.name);
+        }
+        this.geoScaleSelector = new FlowFieldSelector(geoOptions,0,"View",this.controlPanel);
 
         this.dampValueSlider = new GuiSlider(0.001,0.02, this.velDampValue,0.001,"Speed",this.controlPanel);
         this.randomValueSlider = new GuiSlider(0,10, this.randomAmount,0.01,"Drift",this.controlPanel);
+
+        this.attractionColorPicker = createColorPicker(this.attractionColor);
+        this.attractionColorPicker.parent(this.controlPanel);
         this.attractionStrengthSlider = new GuiSlider(0,10.0,this.attractionStrength,0.001,"Attraction",this.controlPanel);
+        this.repulsionColorPicker = createColorPicker(this.repulsionColor);
+        this.repulsionColorPicker.parent(this.controlPanel);
         this.repulsionStrengthSlider = new GuiSlider(0,10.0,this.repulsionStrength,0.001,"Repulsion",this.controlPanel);
+
         this.particleSlider = new GuiSlider(1,dataTextureDimension*dataTextureDimension,this.particleCount,1,"Particles",this.controlPanel);
         this.decaySlider = new GuiSlider(0.0,0.5,this.trailDecayValue,0.001,"Decay",this.controlPanel);
         this.particleSizeSlider = new GuiSlider(0,10.0,this.pointSize,0.1,"Size",this.controlPanel);
@@ -192,20 +206,6 @@ class FlowField{
         this.showRepulsorsCheckbox = new GuiCheckbox("Show Repulsors",this.renderRs,this.controlPanel);
         this.maskParticlesCheckbox = new GuiCheckbox("Mask Off Oceans",this.maskParticles,this.controlPanel);
         this.showDataCheckbox = new GuiCheckbox("Show Data Textures",this.showingData,this.controlPanel);
-
-        //preset data selector
-        let options = [];
-        for(let i = 0; i<presets.length; i++){
-            options.push(presets[i].title);
-        }
-        this.presetSelector = new FlowFieldSelector(options,this.presetIndex,"Demographic Data",this.controlPanel);
-
-        //preset view selector
-        const geoOptions = [];
-        for(let view of viewPresets){
-            geoOptions.push(view.name);
-        }
-        this.geoScaleSelector = new FlowFieldSelector(geoOptions,0,"View",this.controlPanel);
        
         //save gif button
         this.saveGifButton = new GuiButton("Save GIF", saveFlowFieldGif,this.controlPanel);
@@ -286,10 +286,8 @@ class FlowField{
         this.updateParticleDataShader.setUniform('uRandomScale',this.randomAmount);
         this.updateParticleDataShader.setUniform('uMouseInteraction',this.mouseInteraction);
         this.updateParticleDataShader.setUniform('uMousePosition',[mouseX/width,mouseY/height]);
-
         // this.updateParticleDataShader.setUniform('uTime',(millis()%1000));
         this.updateParticleDataShader.setUniform('uTime',(frameCount%120));
-
         this.updateParticleDataShader.setUniform('uInitialData',initialStartingPositions);
         this.updateParticleDataShader.setUniform('uAgeLimit',this.particleAgeLimit);
         this.updateParticleDataShader.setUniform('uParticleAgeTexture',this.particleAgeTexture);
