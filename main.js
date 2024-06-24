@@ -250,6 +250,8 @@ function setup(){
 }
 
 function draw(){
+    // background(255);
+    background(0,0);
     flowField.updateParametersFromGui();
     if(flowField.isActive){
         flowField.updateParticles();

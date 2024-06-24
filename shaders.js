@@ -4,7 +4,58 @@
 //Identity function so I can tag string literals with the glsl marker
 const glsl = x => x;
 
-//fills a texture with random noise (used for initializing the simulation)
+
+/*
+
+Shader that fades the alpha channel of all pixels
+
+*/
+
+const fadeToTransparentVert = glsl`
+precision highp float;
+precision highp sampler2D;
+
+attribute vec3 aPosition;
+attribute vec2 aTexCoord;
+
+//Varying variable to pass the texture coordinates into the fragment shader
+varying vec2 vTexCoord;
+
+void main(){
+    //passing aTexCoord into the frag shader
+    vTexCoord = aTexCoord;
+    //always gotta end by setting gl_Position equal to something;
+    gl_Position = vec4(aPosition,1.0);//translate it into screen space coords
+}
+`;
+const fadeToTransparentFrag = glsl`
+precision highp float;
+precision highp sampler2D;
+
+uniform float uFadeAmount; //a percentage/decimal number that the alpha value is multiplied by
+uniform sampler2D uSourceImage;
+uniform vec4 uBackgroundColor;
+
+varying vec2 vTexCoord;
+
+void main(){
+    vec4 currentColor = texture2D(uSourceImage,vTexCoord);
+    // currentColor.a *= uFadeAmount;
+    currentColor.a -= uFadeAmount;
+    if(currentColor.a < 0.01){
+        discard;
+    }
+    gl_FragColor = currentColor;
+}
+`;
+
+
+/*
+
+fills a texture with random noise (used for initializing the simulation)
+
+*/
+
 const randomFrag = glsl`
 precision highp float;
 precision highp sampler2D;
@@ -22,6 +73,12 @@ void main(){
     gl_FragColor = vec4(random(vParticleCoord,1.0+uRandomSeed)*uScale,random(vParticleCoord,2.0+uRandomSeed)*uScale,random(vParticleCoord,0.0+uRandomSeed)*uScale,random(vParticleCoord,3.0+uRandomSeed)*uScale);
 }
 `;
+
+/*
+
+Increases particle age, or resets it if the particle is too old
+
+*/
 
 const updateParticleAgeVert = glsl`
 precision highp float;
@@ -45,7 +102,6 @@ const updateParticleAgeFrag = glsl`
 precision highp float;
 precision highp sampler2D;
 
-uniform vec2 uDimensions;
 uniform float uAgeLimit;
 varying vec2 vTexCoord;
 

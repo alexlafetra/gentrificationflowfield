@@ -26,8 +26,7 @@ function fillFBOwithRandom(fbo,scale,seed){
 }
 
 function saveFlowFieldGif(){
-    background(255);
-    saveGif(presets[flowField.presetIndex].title+".gif", Number(flowField.gifLengthTextbox.value()),{units:'frames'})
+    saveGif(presets[flowField.presetIndex].title+".gif", Number(flowField.gifLengthTextbox.value()),{units:'frames',delay:10})
 }
 
 class FlowField{
@@ -35,7 +34,8 @@ class FlowField{
         //Parameters
         this.particleCount = 40000;
         this.trailDecayValue = 0.04;
-        this.pointSize = mainCanvas.width/1000;
+        this.pointSize = mainCanvas.width/500;
+
         this.particleAgeLimit = 150;
         this.velDampValue = 0.004;
         this.forceStrength = 0.05;
@@ -62,6 +62,7 @@ class FlowField{
         this.updateAgeShader = createShader(updateParticleAgeVert,updateParticleAgeFrag);
         this.drawParticlesShader = createShader(drawParticlesVS,drawParticlesFS);
         this.calcFlowFieldShader = createShader(calculateFlowFieldVert,calculateFlowFieldFrag);
+        this.fadeParticleCanvasShader = createShader(fadeToTransparentVert,fadeToTransparentFrag);
 
         //Texture Buffers
         this.particleAgeTexture = createFramebuffer({width:dataTextureDimension,height:dataTextureDimension,format:FLOAT,textureFiltering:NEAREST,depth:false});
@@ -72,7 +73,7 @@ class FlowField{
         this.particleMask = createFramebuffer({width:mainCanvas.width,height:mainCanvas.height,depth:false});
 
         this.particleCanvas = createFramebuffer({width:this.size,height:this.size,format:FLOAT,depth:false});
-        this.drawFBO = createFramebuffer({width:this.size,height:this.size,format:FLOAT,depth:false});
+        this.renderFBO = createFramebuffer({width:this.size,height:this.size,format:FLOAT,depth:false});
 
         //give this.particleMask the correct section of the particle mask
         this.updateParticleMask();
@@ -177,7 +178,7 @@ class FlowField{
         this.attractionStrengthSlider = new GuiSlider(0,10.0,this.attractionStrength,0.001,"Attraction",this.controlPanel);
         this.repulsionStrengthSlider = new GuiSlider(0,10.0,this.repulsionStrength,0.001,"Repulsion",this.controlPanel);
         this.particleSlider = new GuiSlider(1,dataTextureDimension*dataTextureDimension,this.particleCount,1,"Particles",this.controlPanel);
-        this.decaySlider = new GuiSlider(0.0001,0.2,this.trailDecayValue,0.0001,"Decay",this.controlPanel);
+        this.decaySlider = new GuiSlider(0.0,0.5,this.trailDecayValue,0.001,"Decay",this.controlPanel);
         this.particleSizeSlider = new GuiSlider(0,10.0,this.pointSize,0.1,"Size",this.controlPanel);
         this.maskParticlesCheckbox = new GuiCheckbox("Mask Off Oceans",this.maskParticles,this.controlPanel);
         this.showTractsCheckbox = new GuiCheckbox("Overlay Census Tract Boundaries",false,this.controlPanel);
@@ -308,8 +309,8 @@ class FlowField{
         fillFBOwithRandom(this.particleAgeTextureBuffer,this.particleAgeLimit/100.0,r1);
     }
     renderGL(){
+        //using webGL to draw each particle as a point
         this.particleCanvas.begin();
-        clear();
         //setting ID attributes (or trying to at least)
         gl.bindBuffer(gl.ARRAY_BUFFER, idBuffer);
         gl.enableVertexAttribArray(drawParticlesProgLocs.id);
@@ -337,12 +338,20 @@ class FlowField{
         gl.drawArrays(gl.POINTS,0,this.particleCount);
         this.particleCanvas.end();
 
-        this.drawFBO.begin();
-        background(255,this.trailDecayValue*255.0);//make the old image of particles slightly transparent
-        image(this.particleCanvas,-this.drawFBO.width/2,-this.drawFBO.height/2,this.drawFBO.width,this.drawFBO.height);//draw the particles
-        this.drawFBO.end();
+        //rendering the particles
+        this.renderFBO.begin();
+        clear();//clear out the old image (bc you're about to read from the other canvas)
+        shader(this.fadeParticleCanvasShader);
+        this.fadeParticleCanvasShader.setUniform('uSourceImage',this.particleCanvas);
+        this.fadeParticleCanvasShader.setUniform('uFadeAmount',this.trailDecayValue);
+        quad(-1,-1,1,-1,1,1,-1,1);
+        this.renderFBO.end();
 
-        image(this.drawFBO,-width/2,-height/2,width,height);
+        //swap the particle FBO and the rendering FBO
+        [this.particleCanvas,this.renderFBO] = [this.renderFBO,this.particleCanvas];
+
+
+        image(this.renderFBO,-mainCanvas.width/2,-mainCanvas.height/2,mainCanvas.width,mainCanvas.height);//draw the particles
     }
     renderData(){
         image(this.particleDataTexture,-width/2,-height/2,width/3,height/3);
