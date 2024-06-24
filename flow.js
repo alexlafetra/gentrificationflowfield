@@ -36,10 +36,10 @@ class FlowField{
         this.trailDecayValue = 0.04;
         this.pointSize = mainCanvas.width/500;
 
-        this.particleAgeLimit = 150;
+        this.particleAgeLimit = 1.2;//this*100 ==> how many frames particles live for
         this.velDampValue = 0.004;
         this.forceStrength = 0.05;
-        this.randomAmount = 0.1;
+        this.randomAmount = 2.5;
         this.repulsionStrength = 3.0;
         this.attractionStrength = 3.0;
         this.size = height;
@@ -52,6 +52,8 @@ class FlowField{
         this.renderRs = true;//render repulsors
         this.repulsionColor = color(20,0,180);
         this.attractionColor = color(255,0,120);
+
+        this.mouseInteraction = true;
 
         //data
         this.attractorArray = attractors;
@@ -180,14 +182,16 @@ class FlowField{
         this.particleSlider = new GuiSlider(1,dataTextureDimension*dataTextureDimension,this.particleCount,1,"Particles",this.controlPanel);
         this.decaySlider = new GuiSlider(0.0,0.5,this.trailDecayValue,0.001,"Decay",this.controlPanel);
         this.particleSizeSlider = new GuiSlider(0,10.0,this.pointSize,0.1,"Size",this.controlPanel);
-        this.maskParticlesCheckbox = new GuiCheckbox("Mask Off Oceans",this.maskParticles,this.controlPanel);
+
+        this.activeCheckbox = new GuiCheckbox("Run Simulation",this.isActive,this.controlPanel);
+        this.mouseInteractionCheckbox = new GuiCheckbox("Mouse Interaction",this.mouseInteraction,this.controlPanel);
         this.showTractsCheckbox = new GuiCheckbox("Overlay Census Tract Boundaries",false,this.controlPanel);
-        this.showFlowCheckbox = new GuiCheckbox("Show Flow Field",false,this.controlPanel);
         this.showHOLCCheckbox = new GuiCheckbox("Overlay HOLC Redlining Tracts",false,this.controlPanel);
-        this.activeCheckbox = new GuiCheckbox("Run",this.isActive,this.controlPanel);
-        this.showDataCheckbox = new GuiCheckbox("Show Data Textures",this.showingData,this.controlPanel);
+        this.showFlowCheckbox = new GuiCheckbox("Overlay Flow Field",false,this.controlPanel);
         this.showAttractorsCheckbox = new GuiCheckbox("Show Attractors",this.renderAs,this.controlPanel);
         this.showRepulsorsCheckbox = new GuiCheckbox("Show Repulsors",this.renderRs,this.controlPanel);
+        this.maskParticlesCheckbox = new GuiCheckbox("Mask Off Oceans",this.maskParticles,this.controlPanel);
+        this.showDataCheckbox = new GuiCheckbox("Show Data Textures",this.showingData,this.controlPanel);
 
         //preset data selector
         let options = [];
@@ -222,6 +226,7 @@ class FlowField{
         this.showingData = this.showDataCheckbox.value();
         this.renderAs = this.showAttractorsCheckbox.value();
         this.renderRs = this.showRepulsorsCheckbox.value();
+        this.mouseInteraction = this.mouseInteractionCheckbox.value();
 
         //updating repulsion/attraction strengths
         let needToUpdateFF = false;
@@ -279,10 +284,14 @@ class FlowField{
         this.updateParticleDataShader.setUniform('uParticlePosTexture',this.particleDataTexture);
         this.updateParticleDataShader.setUniform('uDamp',this.velDampValue/10.0);
         this.updateParticleDataShader.setUniform('uRandomScale',this.randomAmount);
-        this.updateParticleDataShader.setUniform('uTime',(millis()%100));
-        // this.updateParticleDataShader.setUniform('uTime',2.0);
+        this.updateParticleDataShader.setUniform('uMouseInteraction',this.mouseInteraction);
+        this.updateParticleDataShader.setUniform('uMousePosition',[mouseX/width,mouseY/height]);
 
-        this.updateParticleDataShader.setUniform('uAgeLimit',this.particleAgeLimit/100.0);
+        // this.updateParticleDataShader.setUniform('uTime',(millis()%1000));
+        this.updateParticleDataShader.setUniform('uTime',(frameCount%120));
+
+        this.updateParticleDataShader.setUniform('uInitialData',initialStartingPositions);
+        this.updateParticleDataShader.setUniform('uAgeLimit',this.particleAgeLimit);
         this.updateParticleDataShader.setUniform('uParticleAgeTexture',this.particleAgeTexture);
         this.updateParticleDataShader.setUniform('uParticleTrailTexture',this.particleCanvas);
         this.updateParticleDataShader.setUniform('uParticleMask',this.particleMask);
@@ -294,19 +303,21 @@ class FlowField{
     updateAge(){
         this.particleAgeTextureBuffer.begin();
         shader(this.updateAgeShader);
-        this.updateAgeShader.setUniform('uAgeLimit',this.particleAgeLimit/100.0);
+        this.updateAgeShader.setUniform('uAgeLimit',this.particleAgeLimit);
         this.updateAgeShader.setUniform('uAgeTexture',this.particleAgeTexture);
         quad(-1,-1,1,-1,1,1,-1,1);
         this.particleAgeTextureBuffer.end();
         [this.particleAgeTexture,this.particleAgeTextureBuffer] = [this.particleAgeTextureBuffer,this.particleAgeTexture];
     }
     resetParticles(){
-        let r = random();
+        let r = 1.1;
         fillFBOwithRandom(this.particleDataTexture,1.0,r);
         fillFBOwithRandom(this.particleDataTextureBuffer,1.0,r);
-        let r1 = random();
-        fillFBOwithRandom(this.particleAgeTexture,this.particleAgeLimit/100.0,r1);
-        fillFBOwithRandom(this.particleAgeTextureBuffer,this.particleAgeLimit/100.0,r1);
+        // this.particleDataTexture = initialStartingPositions;
+        // this.particleDataTextureBuffer = this.particleDataTexture;
+        let r1 = 1;
+        fillFBOwithRandom(this.particleAgeTexture,this.particleAgeLimit,r1);
+        fillFBOwithRandom(this.particleAgeTextureBuffer,this.particleAgeLimit,r1);
     }
     renderGL(){
         //using webGL to draw each particle as a point

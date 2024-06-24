@@ -144,12 +144,16 @@ uniform sampler2D uFlowFieldTexture;
 uniform sampler2D uParticlePosTexture;
 uniform sampler2D uParticleAgeTexture;
 uniform sampler2D uParticleMask;
+uniform sampler2D uInitialData;
 
 uniform float uDamp;
 uniform float uRandomScale;
 uniform float uTime;
 uniform float uAgeLimit;
 uniform bool uUseMaskTexture;
+uniform bool uMouseInteraction;
+
+uniform vec2 uMousePosition;
 
 varying vec2 vParticleCoord;
 
@@ -164,14 +168,22 @@ void main(){
     vec4 particleData =  texture2D(uParticlePosTexture,vParticleCoord);
     vec2 screenPosition = particleData.xy;//position data is stored in the r,g channels
     vec2 particleVelocity = particleData.zw;//velocity data is stored in the b,a channels
+    if(uMouseInteraction){
+        float dM = distance(screenPosition,uMousePosition);
+        particleVelocity += (screenPosition-uMousePosition)/(10.0*dM*dM);
+    }
 
     //checking the age of the particle
     vec4 textureAge = texture2D(uParticleAgeTexture,vParticleCoord);
 
     //if it's too old, put it somewhere random (within the mask) and return
     if(textureAge.x > uAgeLimit){
-        screenPosition.x = random(screenPosition.xy);
-        screenPosition.y = random(screenPosition.xy);
+        // screenPosition.x = random(screenPosition.xy);
+        // screenPosition.y = random(screenPosition.xy);
+        vec4 initialData = texture2D(uInitialData,vParticleCoord);//use this for looping
+        screenPosition = initialData.xy;
+        particleVelocity = initialData.zw;
+
     }
     //getting the random vel
     if(uRandomScale>0.0){
@@ -190,7 +202,7 @@ void main(){
         if(val<0.5){
             //try to place the particle 100 times
             for(int i = 0; i<100; i++){
-                vec2 replacementPos = vec2(random(vParticleCoord*uTime),random(vParticleCoord/uTime));
+                vec2 replacementPos = vec2(random(vParticleCoord.yx*sin(uTime)),random(vParticleCoord.xy/sin(uTime)));
                 val = texture2D(uParticleMask,replacementPos).x;
                 if(val>0.5){
                     gl_FragColor = vec4(replacementPos,newVelocity);

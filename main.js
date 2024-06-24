@@ -126,8 +126,7 @@ function saveTracts(){
 //you gotta be in devmode for this!
 //renders tracts to a canvas, then saves it
 function saveTractOutlines(){
-    const temp = createFramebuffer({width:4000,height:4000});
-    const oldScale = scale;
+    const temp = createFramebuffer({width:width,height:height});
     temp.begin();
     background(0,0);
     strokeWeight(1);
@@ -137,10 +136,7 @@ function saveTractOutlines(){
 }
 
 function saveHOLCOutlines(){
-    const temp = createFramebuffer({width:1000,height:1000});
-    const oldScale = scale;
-    // scale.x*=5;
-    // scale.y*=5;
+    const temp = createFramebuffer({width:width,height:height});
     temp.begin();
     background(0,0);
     renderHOLCTracts(geoOffset,oakHolcTracts);
@@ -232,11 +228,16 @@ function logPresets(){
     console.log(bigString);
 }
 
+let initialStartingPositions;
 function setup(){
     //create canvas and grab webGL context
     mainCanvas = createCanvas(700,700,WEBGL);
     gl = mainCanvas.GL;
     randomShader = createShader(updateParticleDataVert,randomFrag);
+
+    //this is only used for making looping animations!
+    initialStartingPositions = createFramebuffer({width:dataTextureDimension,height:dataTextureDimension,format:FLOAT,textureFiltering:NEAREST,depth:false});
+    fillFBOwithRandom(initialStartingPositions,1.0,1.1);
 
     if(devMode)
         setup_DevMode();
@@ -250,11 +251,10 @@ function setup(){
 }
 
 function draw(){
-    // background(255);
-    background(0,0);
     flowField.updateParametersFromGui();
     if(flowField.isActive){
         flowField.updateParticles();
+        background(0,0);
         flowField.render();
     }
 }
