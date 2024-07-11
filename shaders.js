@@ -40,7 +40,6 @@ varying vec2 vTexCoord;
 
 void main(){
     vec4 currentColor = texture2D(uSourceImage,vTexCoord);
-    // currentColor.a *= uFadeAmount;
     currentColor.a -= uFadeAmount;
     if(currentColor.a < 0.01){
         discard;
@@ -287,18 +286,18 @@ void main(){
         //add a vector pointing toward the attractor from this pixel
         //scaled by the inverse square of the distance AND the scale factor
         float dA = distance(attractorCoord,vTexCoord);
-        attraction += uAttractionStrength*(uAttractors[i].z)*(attractorCoord-vTexCoord) / (dA*dA);
-        //the reuplsion force points AWAY from the repulsor point
+        attraction += uAttractionStrength * (uAttractors[i].z) * (attractorCoord-vTexCoord) / (dA*dA);
+        //the repulsion force points AWAY from the repulsor point
         float dR = distance(repulsorCoord,vTexCoord);
-        repulsion += uRepulsionStrength*(uRepulsors[i].z)*(vTexCoord-(repulsorCoord)) / (dR*dR);
+        repulsion += uRepulsionStrength * (uRepulsors[i].z) * (vTexCoord-(repulsorCoord)) / (dR*dR);
     }
     attraction /= `+NUMBER_OF_ATTRACTORS+glsl`.0;
     repulsion /= `+NUMBER_OF_ATTRACTORS+glsl`.0;
     //Storing both attraction and repulsion in the same texture
     gl_FragColor = vec4(attraction,repulsion);
 
-    // gl_FragColor = vec4(attraction.x,attraction.y,repulsion.x,0.5*(repulsion.y+2.0));
-    //^^ use this one if you want to render it to a texture! prevents alpha channnel from clipping
+    // gl_FragColor = vec4(attraction,repulsion.x,0.5*(repulsion.y+2.0));
+    //^^ Prevents alpha channel from clipping -- use this if you want to save the flow field to a texture!
 }
 `;
 
