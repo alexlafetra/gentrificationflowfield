@@ -36,8 +36,6 @@ let randomShader;
 let drawParticlesProgram;
 let drawParticlesProgLocs;
 
-
-
 //Presets
 let presets;
 
@@ -88,35 +86,35 @@ const viewPresets = [
     }
 ];
 
-class DemographicVis{
-    constructor(title,description,data){
-        this.title = title;
-        this.description = description;
-        this.demographicFunction = data;
-    }
-    setActive(index,ff){
-        ff.chartTitle.html(this.title);
-        ff.chartEquation.html(this.description);
-        ff.presetIndex = index;
-        ff.calculateAttractors(NUMBER_OF_ATTRACTORS,this.demographicFunction);
-        ff.updateFlow();
-    }
+function initGL(){
+    drawParticlesProgram = webglUtils.createProgramFromSources(
+        gl, [drawParticlesVS, drawParticlesFS]);
+    drawParticlesProgLocs = {
+        id: gl.getAttribLocation(drawParticlesProgram, 'id'),
+        uPositionTexture: gl.getUniformLocation(drawParticlesProgram, 'uPositionTexture'),
+        uColorTexture: gl.getUniformLocation(drawParticlesProgram, 'uColorTexture'),
+        uAttractionTexture: gl.getUniformLocation(drawParticlesProgram, 'uAttractionTexture'),
+        uRepulsionTexture: gl.getUniformLocation(drawParticlesProgram, 'uRepulsionTexture'),
+        uTextureDimensions: gl.getUniformLocation(drawParticlesProgram, 'uTextureDimensions'),
+        uMatrix: gl.getUniformLocation(drawParticlesProgram, 'uMatrix'),
+    };
+    ids = new Array(dataTextureDimension*dataTextureDimension).fill(0).map((_, i) => i);
+    idBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, idBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(ids), gl.STATIC_DRAW);
 }
 
-class Preset{
-    constructor(title,description,aPoints,rPoints){
-        this.title = title;
-        this.description = description;
-        this.attractors = aPoints;
-        this.repulsors = rPoints;
-    }
-    setActive(index,ff){
-        ff.chartTitle.html(this.title);
-        ff.chartEquation.html(this.description);
-        ff.presetIndex = index;
-        ff.setPresetAttractors();
-        ff.updateFlow();
-    }
+function fillFBOwithRandom(fbo,scale,seed){
+    fbo.begin();
+    shader(randomShader);
+    randomShader.setUniform('uScale',scale);
+    randomShader.setUniform('uRandomSeed',seed);
+    quad(-1,-1,-1,1,1,1,1,-1);
+    fbo.end();
+}
+
+function saveFlowFieldGif(){
+    saveGif(presets[flowField.presetIndex].title+".gif", Number(flowField.gifLengthTextbox.value()),{units:'frames',delay:10})
 }
 
 function saveTracts(){
@@ -202,8 +200,8 @@ function setup_DevMode(){
     // tractOutlines.end();
     // saveCanvas(tractOutlines, 'censusTractOutlines.png','png');
 
-    flowField = new FlowField(0);
-    flowField.calculateAttractors(NUMBER_OF_ATTRACTORS);
+    flowField = new CensusDataFlowField();
+    flowField.setFlowFieldNodes();
 }
 
 function setup_Prerendered(){
@@ -212,7 +210,7 @@ function setup_Prerendered(){
     offset = {x:mainCanvas.width/4,y:mainCanvas.height/4};
     let s = mainCanvas.width*2/5;
     scale = {x:s,y:s*(-1)};//manually adjusting the scale to taste
-    flowField = new FlowField(0);
+    flowField = new CensusDataFlowField();
 }
 
 function logPresets(){
@@ -229,6 +227,7 @@ function logPresets(){
 }
 
 let initialStartingPositions;
+
 function setup(){
     //create canvas and grab webGL context
     mainCanvas = createCanvas(700,700,WEBGL);
@@ -245,16 +244,9 @@ function setup(){
         setup_Prerendered();
 
     initGL();
-
-    presets[0].setActive(0,flowField);
     background(255);
 }
 
 function draw(){
-    flowField.updateParametersFromGui();
-    if(flowField.isActive){
-        flowField.updateParticles();
-        background(0,0);
-        flowField.render();
-    }
+    flowField.run();
 }

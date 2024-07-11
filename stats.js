@@ -79,8 +79,6 @@ function proportionalHispOrLatinoChange(tract){
     return raceChangeInProportion(tract,'Total races tallied for householders!!Total races tallied for Not Hispanic or Latino householders');
 }
 
-
-
 function ratioWhiteChange(tract){
     return (tract.raceData2020.obj.White/tract.raceData2020.obj.Total) / (tract.raceData2000.obj.White/tract.raceData2000.obj.Total);
 }
@@ -134,6 +132,31 @@ function rentBurden40to49(tract){
 function rentBurden50orMore(tract){
     return rentBurden(tract,'50 percent or more');
 }
+
+class DemographicVis{
+    constructor(title,description,data){
+        this.title = title;
+        this.description = description;
+        this.demographicFunction = data;
+    }
+    setActive(index,ff){
+        ff.chartTitle.html(this.title);
+        ff.chartEquation.html(this.chartEquation);
+        ff.presetIndex = index;
+        ff.calculateAttractors(NUMBER_OF_ATTRACTORS,this.demographicFunction);
+        ff.updateFlow();
+    }
+}
+
+class Preset{
+    constructor(title,chartEquation,aPoints,rPoints){
+        this.title = title;
+        this.chartEquation = chartEquation;
+        this.attractors = aPoints;
+        this.repulsors = rPoints;
+    }
+}
+
 function createPresets(){
     //Preset color/flows
     whiteProportionComparisonPreset = new DemographicVis("Change In Proportion of White Population", "P<sub>White 2000</sub> / P<sub>Total 2000</sub> - P<sub>White 2020</sub> / P<sub>Total 2020</sub>",proportionalWhiteChange);

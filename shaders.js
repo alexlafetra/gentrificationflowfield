@@ -177,8 +177,6 @@ void main(){
 
     //if it's too old, put it somewhere random (within the mask) and return
     if(textureAge.x > uAgeLimit){
-        // screenPosition.x = random(screenPosition.xy);
-        // screenPosition.y = random(screenPosition.xy);
         vec4 initialData = texture2D(uInitialData,vParticleCoord);//use this for looping
         screenPosition = initialData.xy;
         particleVelocity = initialData.zw;
