@@ -18,26 +18,21 @@ Add in something about financial policy
 */
 
 let flowField;
-let flowFields = [];
 let holcTexture;
-let mask;
+let tractOutlines;
 let presetFlowMask;
 
-let attractors = [];
-let repulsors = [];
 let gl;
 let mainCanvas;
-let tractOutlines;
 let idBuffer;
-let ids;
 
-let dataTextureDimension = 200;
+const dataTextureDimension = 200;
 let randomShader;
 let drawParticlesProgram;
 let drawParticlesProgLocs;
 
 //Presets
-let presets;
+let censusDataPresets;
 
 //20 is a good base number
 const NUMBER_OF_ATTRACTORS = 300;
@@ -46,6 +41,10 @@ const NUMBER_OF_ATTRACTORS = 300;
 //or with the full dataset, allowing you to explore/experiment
 // let devMode = true;
 let devMode = false;
+
+const simSettingsPresets = [
+    
+]
 
 const viewPresets = [
     {
@@ -86,6 +85,8 @@ const viewPresets = [
     }
 ];
 
+let ids;
+
 function initGL(){
     drawParticlesProgram = webglUtils.createProgramFromSources(
         gl, [drawParticlesVS, drawParticlesFS]);
@@ -114,7 +115,7 @@ function fillFBOwithRandom(fbo,scale,seed){
 }
 
 function saveFlowFieldGif(){
-    saveGif(presets[flowField.presetIndex].title+".gif", Number(flowField.gifLengthTextbox.value()),{units:'frames',delay:10})
+    saveGif(flowField.censusDataPreset.title+".gif", Number(flowField.gifLengthTextbox.value()),{units:'frames',delay:10})
 }
 
 function saveTracts(){
@@ -216,7 +217,7 @@ function setup_Prerendered(){
 function logPresets(){
     let i = 0;
     let bigString;
-    for(let preset of presets){
+    for(let preset of censusDataPresets){
         let a = getSignificantPoints(NUMBER_OF_ATTRACTORS,preset.demographicFunction);
         let r = getLeastSignificantPoints(NUMBER_OF_ATTRACTORS,preset.demographicFunction);
         bigString += "\nconst preset"+i+"Attractors = "+JSON.stringify(a)+";";

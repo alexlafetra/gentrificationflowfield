@@ -179,7 +179,7 @@ function createPresets(){
     rentBurden8 = new DemographicVis("Change in Renters spending 40-49% of monthly income","",rentBurden40to49);
     rentBurden9 = new DemographicVis("Change in Renters spending more than 50% of monthly income","",rentBurden50orMore);
 
-    presets = [
+    censusDataPresets = [
         whiteProportionComparisonPreset,
         blackProportionComparisonPreset,
         asianProportionComparisonPreset,
@@ -221,7 +221,7 @@ function createPremadePresets(){
   rentBurden8 = new Preset("Change in Renters spending 40-49% of monthly income","",preset15Attractors,preset15Repulsors);
   rentBurden9 = new Preset("Change in Renters spending more than 50% of monthly income","",preset16Attractors,preset16Repulsors);
 
-  presets = [
+  censusDataPresets = [
       whiteProportionComparisonPreset,
       blackProportionComparisonPreset,
       asianProportionComparisonPreset,
