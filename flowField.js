@@ -1,25 +1,6 @@
 class FlowField{
-    constructor(){
-        this.settings = {
-            particleCount : 40000,
-            trailDecayValue : 0.04,
-            particleSize : mainCanvas.width/500,
-            particleAgeLimit : 1.2,//this*100 ::> how many frames particles live for
-            particleVelocity : 0.004,
-            forceMagnitude : 0.05,
-            randomMagnitude : 2.5,
-            repulsionStrength : 3.0,
-            attractionStrength : 3.0,
-            canvasSize : height,
-            useParticleMask : true, //for preventing particles from entering oceans
-            isActive : true,
-            renderFlowFieldDataTexture : false,
-            renderAttractors : true,//render attractors
-            renderRepulsors : true,//render repulsors
-            repulsionColor : color(20,0,180),
-            attractionColor : color(255,0,120),
-            mouseInteraction : false
-        };
+    constructor(settings){
+        this.settings = JSON.parse(JSON.stringify(settings));
 
         //data
         this.attractorArray = [];
@@ -33,17 +14,21 @@ class FlowField{
         this.fadeParticleCanvasShader = createShader(fadeToTransparentVert,fadeToTransparentFrag);
 
         //Texture Buffers
-        this.particleAgeTexture = createFramebuffer({width:dataTextureDimension,height:dataTextureDimension,format:FLOAT,textureFiltering:NEAREST,depth:false});
+        this.particleAgeTexture = createFramebuffer({width:dataTextureDimension,height:dataTextureDimension,format:FLOAT,textureFiltering:NEAREST,depth:false});//holds age data
         this.particleAgeTextureBuffer = createFramebuffer({width:dataTextureDimension,height:dataTextureDimension,format:FLOAT,textureFiltering:NEAREST,depth:false});
-        this.particleDataTexture = createFramebuffer({width:dataTextureDimension,height:dataTextureDimension,format:FLOAT,textureFiltering:NEAREST,depth:false});
+        this.particleDataTexture = createFramebuffer({width:dataTextureDimension,height:dataTextureDimension,format:FLOAT,textureFiltering:NEAREST,depth:false});//holds velocity and position data
         this.particleDataTextureBuffer = createFramebuffer({width:dataTextureDimension,height:dataTextureDimension,format:FLOAT,textureFiltering:NEAREST,depth:false});
-        this.flowFieldTexture = createFramebuffer({width:this.settings.canvasSize,height:this.settings.canvasSize,format:FLOAT,textureFiltering:NEAREST,depth:false});
-        this.particleMask = createFramebuffer({width:mainCanvas.width,height:mainCanvas.height,depth:false});
+        this.flowFieldTexture = createFramebuffer({width:this.settings.canvasSize,height:this.settings.canvasSize,format:FLOAT,textureFiltering:NEAREST,depth:false});//holds the flowfield data attraction = (r,g) ; repulsion = (b,a)
+        this.particleMask = createFramebuffer({width:mainCanvas.width,height:mainCanvas.height,depth:false});//holds the particle mask data (white is tracts w/people in them, black is empty tracts)
+        //not super necessary, but makes it so particles return to their starting position (lets you make seamless looping gifs)
+        this.initialStartingPositions = createFramebuffer({width:dataTextureDimension,height:dataTextureDimension,format:FLOAT,textureFiltering:NEAREST,depth:false});
+        fillFBOwithRandom(this.initialStartingPositions,1.0,1.1);
 
+        //canvases for drawing to
         this.particleCanvas = createFramebuffer({width:this.settings.canvasSize,height:this.settings.canvasSize,format:FLOAT,depth:false});
         this.renderFBO = createFramebuffer({width:this.settings.canvasSize,height:this.settings.canvasSize,format:FLOAT,depth:false});
 
-        //give this.particleMask the correct section of the particle mask
+        //move the particle mask to the correct view
         this.updateParticleMask();
         //Initialize particle vel/positions w/ random noise
         this.resetParticles();
@@ -56,10 +41,14 @@ class FlowField{
         renderTransformedImage(presetFlowMask)
         this.particleMask.end();
     }
+    updateSettings(settings){
+        this.settings = settings;
+    }
     renderAttractors(){
         for(let i = 0; i<this.attractorArray.length; i+=3){
             const x = (this.attractorArray[i])*scale.x+offset.x;
             const y = -(this.attractorArray[i+1]*scale.x)+offset.y;
+            const force = this.attractorArray[i+2];
             let size = map(this.attractorArray[i+2],this.attractorArray[this.attractorArray.length-1],this.attractorArray[2],1,10);//scaling size based on the min/max size of attractors
             const alpha = map(size,1,10,0,255);
             fill(this.settings.attractionColor,alpha);
@@ -71,6 +60,7 @@ class FlowField{
         for(let i = 0; i<this.repulsorArray.length; i+=3){
             const x = (this.repulsorArray[i])*scale.x+offset.x;
             const y = -(this.repulsorArray[i+1]*scale.x)+offset.y;
+            const force = this.attractorArray[i+2];
             const size = map(this.repulsorArray[i+2],this.repulsorArray[this.repulsorArray.length-1],this.repulsorArray[2],10,1);//scaling size
             const alpha = map(size,1,10,0,255);
             fill(this.settings.repulsionColor,alpha);
@@ -109,7 +99,7 @@ class FlowField{
         this.updateParticleDataShader.setUniform('uMouseInteraction',this.settings.mouseInteraction);
         this.updateParticleDataShader.setUniform('uMousePosition',[mouseX/width,mouseY/height]);
         this.updateParticleDataShader.setUniform('uTime',(frameCount%120));//this is also the amount of time the sim will take to loop
-        this.updateParticleDataShader.setUniform('uInitialData',initialStartingPositions);
+        this.updateParticleDataShader.setUniform('uInitialData',this.initialStartingPositions);
         this.updateParticleDataShader.setUniform('uAgeLimit',this.settings.particleAgeLimit);
         this.updateParticleDataShader.setUniform('uParticleAgeTexture',this.particleAgeTexture);
         this.updateParticleDataShader.setUniform('uParticleTrailTexture',this.particleCanvas);
@@ -204,5 +194,12 @@ class FlowField{
     updateParticles(){
         this.updateAge();
         this.updateParticleData();
+    }
+    run(){
+        if(this.settings.isActive){
+            this.updateParticles();
+            background(0,0);
+            this.render();
+        }
     }
 }

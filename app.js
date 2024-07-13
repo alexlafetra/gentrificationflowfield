@@ -3,11 +3,11 @@ class CensusDataFlowField{
     constructor(){
         this.censusDataPreset = censusDataPresets[0];
         this.activeViewPreset = viewPresets[0];
-        this.simulationParameterPreset = simSettingsPresets[0];
-        this.flowField = new FlowField();
+        this.simulationParameterPreset = defaultSettings;
+        this.flowField = new FlowField(defaultSettings);
         this.initGui();
         this.updateParametersFromGui();
-        this.loadPreset(this.censusDataPreset);
+        this.loadCensusPreset(this.censusDataPreset);
     }
     initGui(){
         let gui = document.getElementById("gui");
@@ -36,13 +36,13 @@ class CensusDataFlowField{
         this.presetSelector = new FlowFieldSelector(options,0,"Demographic Data",this.controlPanel);
 
         //preset view selector
-        const geoOptions = [];
+        const geoOptionNames = [];
         for(let view of viewPresets){
-            geoOptions.push(view.name);
+            geoOptionNames.push(view.name);
         }
-        this.geoScaleSelector = new FlowFieldSelector(geoOptions,0,"View",this.controlPanel);
+        this.geoScaleSelector = new FlowFieldSelector(geoOptionNames,0,"View",this.controlPanel);
 
-        this.dampValueSlider = new GuiSlider(0.001,0.02, this.flowField.settings.particleVelocity,0.001,"Speed",this.controlPanel);
+        this.dampValueSlider = new GuiSlider(0.001,0.1, this.flowField.settings.particleVelocity,0.001,"Speed",this.controlPanel);
         this.randomValueSlider = new GuiSlider(0,10, this.flowField.settings.randomMagnitude,0.01,"Drift",this.controlPanel);
 
         this.attractionColorPicker = createColorPicker(this.flowField.settings.attractionColor);
@@ -58,8 +58,8 @@ class CensusDataFlowField{
 
         this.activeCheckbox = new GuiCheckbox("Run Simulation",this.flowField.settings.isActive,this.controlPanel);
         this.mouseInteractionCheckbox = new GuiCheckbox("Mouse Interaction",this.flowField.settings.mouseInteraction,this.controlPanel);
-        this.showTractsCheckbox = new GuiCheckbox("Overlay Census Tract Boundaries",false,this.controlPanel);
-        this.showHOLCCheckbox = new GuiCheckbox("Overlay HOLC Redlining Tracts",false,this.controlPanel);
+        this.showTractsCheckbox = new GuiCheckbox("Overlay Census Tract Boundaries",this.flowField.settings.renderCensusTracts,this.controlPanel);
+        this.showHOLCCheckbox = new GuiCheckbox("Overlay HOLC Redlining Tracts",this.flowField.settings.renderHOLCTracts,this.controlPanel);
         this.showAttractorsCheckbox = new GuiCheckbox("Show Attractors",this.flowField.settings.renderAttractors,this.controlPanel);
         this.showRepulsorsCheckbox = new GuiCheckbox("Show Repulsors",this.flowField.settings.renderRepulsors,this.controlPanel);
         this.useParticleMaskCheckbox = new GuiCheckbox("Mask Off Oceans",this.flowField.settings.useParticleMask,this.controlPanel);
@@ -105,16 +105,20 @@ class CensusDataFlowField{
         //check to see if the flowfield selector has been changed, and if it has, set the new preset
         if(this.censusDataPreset != censusDataPresets[this.presetSelector.selected()]){
             this.censusDataPreset = censusDataPresets[this.presetSelector.selected()];
-            this.loadPreset(this.censusDataPreset);
+            this.loadCensusPreset(this.censusDataPreset);
         }
         //same as above, but with the view presets
         if(this.activeViewPreset != viewPresets[this.geoScaleSelector.selected()]){
             this.activeViewPreset = viewPresets[this.geoScaleSelector.selected()];
+            if(this.activeViewPreset.settings)
+                this.loadSimulationSettingsIntoGUI(this.activeViewPreset.settings);
+            else
+                this.loadSimulationSettingsIntoGUI(defaultSettings);
             offset = {x:this.activeViewPreset.x,y:this.activeViewPreset.y};
             scale = {x:this.activeViewPreset.scale,y:-this.activeViewPreset.scale};
-            background(255);
             this.flowField.updateParticleMask();
             this.flowField.updateFlow();
+            this.flowField.resetParticles();
         }
     }
     logFlowFieldData(presetName){
@@ -180,7 +184,7 @@ class CensusDataFlowField{
         else
             this.setFlowFieldNodesFromPreset();
     }
-    loadPreset(preset){
+    loadCensusPreset(preset){
         this.chartTitle.html(preset.title);
         this.chartEquation.html(preset.chartEquation);
         this.setFlowFieldNodes();
@@ -188,13 +192,19 @@ class CensusDataFlowField{
     }
     run(){
         this.updateParametersFromGui();
-        if(this.flowField.settings.isActive){
-            this.flowField.updateParticles();
-            background(0,0);
-            this.flowField.render();
-        }
+        this.flowField.run();
     }
     saveFFImage(){
         saveCanvas(this.flowField.flowFieldTexture,"flowField.png","png");
+    }
+    loadSimulationSettingsIntoGUI(settings){
+        this.dampValueSlider.set(settings.particleVelocity);
+        this.particleSlider.set(settings.particleCount);
+        this.decaySlider.set(settings.trailDecayValue);
+        this.particleSizeSlider.set(settings.particleSize);
+        this.randomValueSlider.set(settings.randomMagnitude);
+        this.showTractsCheckbox.set(settings.renderCensusTracts);
+        this.attractionStrengthSlider.set(settings.attractionStrength);
+        this.repulsionStrengthSlider.set(settings.repulsionStrength);
     }
 }

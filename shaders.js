@@ -34,7 +34,6 @@ precision highp sampler2D;
 
 uniform float uFadeAmount; //a percentage/decimal number that the alpha value is multiplied by
 uniform sampler2D uSourceImage;
-uniform vec4 uBackgroundColor;
 
 varying vec2 vTexCoord;
 
@@ -214,11 +213,14 @@ void main(){
 }
 `;
 
+/*
+
+*/
 const drawParticlesVS = glsl`
 precision highp float;
 precision highp sampler2D;
 //attribute that we pass in using an array, to tell the shader which particle we're drawing
-attribute float id;
+attribute float particleID;
 uniform sampler2D uPositionTexture;
 uniform sampler2D uColorTexture;
 
@@ -237,7 +239,7 @@ vec4 getValueFrom2DTextureAs1DArray(sampler2D tex, vec2 dimensions, float index)
 
 void main() {
     // pull the position from the texture
-    vec4 position = getValueFrom2DTextureAs1DArray(uPositionTexture, uTextureDimensions, id);
+    vec4 position = getValueFrom2DTextureAs1DArray(uPositionTexture, uTextureDimensions, particleID);
     //use the position to get the flow value
     vColor = texture2D(uColorTexture,position.xy);
     gl_Position = vec4(position.xy,1.0,1.0)-vec4(0.5);
@@ -250,10 +252,35 @@ precision highp float;
 varying vec4 vColor;
 uniform vec4 uRepulsionColor;
 uniform vec4 uAttractionColor;
+
+//borrowed from: https://gist.github.com/companje/29408948f1e8be54dd5733a74ca49bb9
+float map(float value, float min1, float max1, float min2, float max2) {
+    return min2 + (value - min1) * (max2 - min2) / (max1 - min1);
+}
+/*
+
+just some thots:
+colors look weird bc when a particle is evenly pulled on by attractors, exor repulsors,
+the magnitude of the respective force is very small. This means that even tho a particle
+might be much closer to and more 'influenced' by a group of attractors, because it's 
+being evenly pulled around by them even ONE external rep/attractor can outweigh the big group of
+nodes nearby. Not sure how to best deal with this! The good news is that it looks pretty good as-is.
+
+I think ideally you would recalculate the influence of attractors and repulsors by just adding up the magnitude of nodes/d^2,
+and not letting opposing forces cancel out, but that's kind of expensive for just an aesthetic difference.
+You could also write that data to another texture, but again, kind of expensive.
+*/
 void main() {
-    float valA = length(vec2(vColor.x,vColor.y));
-    float valR = length(vec2(vColor.z,vColor.w));
-    float val = (valA-valR)+valR/2.0;
+    float valA = abs(length(vec2(vColor.x,vColor.y)));//magnitude of attraction force
+    float valR = abs(length(vec2(vColor.z,vColor.w)));//magnitude of repulsion force
+    // float val = (valA-valR)+valR/2.0;
+    // float val = (valA - 1.5*valR)/2.0+1.0;
+    // float val = valA/(valR);
+    // float val = map(0.5,valA,-valR,0.0,1.0);
+    // float val = map((valA-valR)/2.0,valA,-valR,1.0,0.0);
+    float val = valA - valR;
+    val = map(val,-1.0,0.5,0.0,1.0);
+    // val = val*val/2.0;
     gl_FragColor = mix(uRepulsionColor,uAttractionColor,val);
 }
 `;

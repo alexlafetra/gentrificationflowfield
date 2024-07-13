@@ -24,6 +24,7 @@ let bayTracts;//Object with all the tract geo+data
 //CA geometry from https://github.com/arcee123/GIS_GEOJSON_CENSUS_TRACTS/tree/master
 //Actually no, they're shapefiles taken from the US Census website and 
 //exported as geoJSON files using QGIS
+//Bc the geographic data in that repo is out of date for the 2020 census!
 let tractGeometry;
 
 //Raw US census data
@@ -301,15 +302,15 @@ function renderHOLCTracts(geometryOffset,holcTracts){
         let color;
         switch(grade){
             case 'A':
-                continue;
+                // continue;
                 color = {r:100,g:100,b:255};
                 break;
             case 'B':
-                continue;
+                // continue;
                 color = {r:100,g:200,b:155};
                 break;
             case 'C':
-                continue;
+                // continue;
                 color = {r:255,g:215,b:0};
                 break;
             case 'D':
@@ -318,8 +319,9 @@ function renderHOLCTracts(geometryOffset,holcTracts){
             case null:
                 continue;
         }
-        stroke(color.r,color.g,color.b);
-
+        // stroke(color.r,color.g,color.b);
+        noStroke();
+        fill(color.r,color.g,color.b);
         //these are multipolygons, so you need to iterate over each one
         for(let shape of polygons){
             beginShape();
@@ -373,10 +375,6 @@ function setupMapData(){
 function setView(x,y,s){
     scale = {x:s,y:-s};
     offset = {x:x,y:y};
-    flowField.updateParticleMask();
-    flowField.updateFlow();
-}
-function setViewToSanJose(){
-    let s = mainCanvas.width;
-    setView(width/16,height/4,s);
+    flowField.flowField.updateParticleMask();
+    flowField.flowField.updateFlow();
 }

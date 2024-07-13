@@ -42,34 +42,105 @@ const NUMBER_OF_ATTRACTORS = 300;
 // let devMode = true;
 let devMode = false;
 
-const simSettingsPresets = [
-    
-]
+const defaultSettings = {
+    particleCount : 40000,
+    trailDecayValue : 0.04,
+    particleSize : 1.4,
+    particleAgeLimit : 1.2,//this*100 ::> how many frames particles live for
+    particleVelocity : 0.004,
+    forceMagnitude : 0.05,
+    randomMagnitude : 2.5,
+    repulsionStrength : 3.0,
+    attractionStrength : 3.0,
+    canvasSize : 700,
+    useParticleMask : true, //for preventing particles from entering oceans
+    isActive : true,
+    renderFlowFieldDataTexture : false,
+    renderCensusTracts: true,
+    renderAttractors : true,//render attractors
+    renderRepulsors : true,//render repulsors
+    repulsionColor : [20,0,180],
+    attractionColor : [255,0,120],
+    mouseInteraction : false
+};
 
 const viewPresets = [
     {
         name: "Entire Bay Area",
         x: 125,
         y: 125,
-        scale: 280
+        scale: 280,
+        settings: defaultSettings
     },
     {
         name: "San Francisco",
-        x: 1150,
-        y: 750,
-        scale: 2000
+        x: 2850,
+        y: 2000,
+        scale: 5000,
+        settings: {
+            particleVelocity: 0.05,
+            particleCount: 40000,
+            trailDecayValue: 0.04,
+            particleSize: 1.4,
+            randomMagnitude: 0.0,
+            renderCensusTracts:true,
+            attractionStrength:4.0,
+            repulsionStrength:4.0
+        }
     },
     {
-        name: "San Jose/East Oakland",
+        name: "South Bay",
         x: 32,
         y: 125,
         scale: 500
     },
     {
-        name: "Berkeley/Oakland",
+        name: "San Jose",
+        x: 100,
+        y: 0,
+        scale: 2500,
+        settings: {
+            particleVelocity: 0.05,
+            particleCount: 40000,
+            trailDecayValue: 0.04,
+            particleSize: 1.4,
+            randomMagnitude: 0.0,
+            renderCensusTracts:true,
+            attractionStrength:3.0,
+            repulsionStrength:3.0
+        }
+    },
+    {
+        name: "East Bay",
         x: 1200,
         y: 1450,
-        scale: 3000
+        scale: 3000,
+        settings: {
+            particleVelocity: 0.05,
+            particleCount: 40000,
+            trailDecayValue: 0.02,
+            particleSize: 1.4,
+            randomMagnitude: 0.0,
+            renderCensusTracts:true,
+            attractionStrength:3.0,
+            repulsionStrength:3.0
+        }
+    },
+    {
+        name: "W. Oakland & Berkeley",
+        x: 2500,
+        y: 2900,
+        scale: 6000,
+        settings: {
+            particleVelocity: 0.05,
+            particleCount: 40000,
+            trailDecayValue: 0.04,
+            particleSize: 1.4,
+            randomMagnitude: 0.0,
+            renderCensusTracts:true,
+            attractionStrength:3.0,
+            repulsionStrength:3.0
+        }
     },
     {
         name: "Richmond",
@@ -91,7 +162,7 @@ function initGL(){
     drawParticlesProgram = webglUtils.createProgramFromSources(
         gl, [drawParticlesVS, drawParticlesFS]);
     drawParticlesProgLocs = {
-        id: gl.getAttribLocation(drawParticlesProgram, 'id'),
+        id: gl.getAttribLocation(drawParticlesProgram, 'particleID'),
         uPositionTexture: gl.getUniformLocation(drawParticlesProgram, 'uPositionTexture'),
         uColorTexture: gl.getUniformLocation(drawParticlesProgram, 'uColorTexture'),
         uAttractionTexture: gl.getUniformLocation(drawParticlesProgram, 'uAttractionTexture'),
@@ -118,37 +189,11 @@ function saveFlowFieldGif(){
     saveGif(flowField.censusDataPreset.title+".gif", Number(flowField.gifLengthTextbox.value()),{units:'frames',delay:10})
 }
 
-function saveTracts(){
-    saveJSON(bayTracts,"tracts.json");
-}
-
-//you gotta be in devmode for this!
-//renders tracts to a canvas, then saves it
-function saveTractOutlines(){
-    const temp = createFramebuffer({width:width,height:height});
-    temp.begin();
-    background(0,0);
-    strokeWeight(1);
-    renderTractOutlines(geoOffset,color(0));
-    temp.end();
-    saveCanvas(temp, 'censusTractOutlines.png','png');
-}
-
-function saveHOLCOutlines(){
-    const temp = createFramebuffer({width:width,height:height});
-    temp.begin();
-    background(0,0);
-    renderHOLCTracts(geoOffset,oakHolcTracts);
-    renderHOLCTracts(geoOffset,sfHolcTracts);
-    renderHOLCTracts(geoOffset,sjHolcTracts);
-    temp.end();
-    saveCanvas(temp, 'HOLCTracts.png','png');
-}
 
 function loadPresetMaps(){
     presetFlowMask = loadImage("data/Prerendered/flowFieldMask.png");
     tractOutlines = loadImage("data/Prerendered/censusTractOutlines.png");
-    holcTexture = loadImage("data/Prerendered/HOLC_Red.png");
+    holcTexture = loadImage("data/Prerendered/HOLCTractOutlines.png");
 }
 
 function preload(){
@@ -201,6 +246,15 @@ function setup_DevMode(){
     // tractOutlines.end();
     // saveCanvas(tractOutlines, 'censusTractOutlines.png','png');
 
+    tractOutlines = createFramebuffer({width:width,height:height});
+    tractOutlines.begin();
+    strokeWeight(1);
+    renderHOLCTracts(geoOffset,oakHolcTracts);
+    renderHOLCTracts(geoOffset,sfHolcTracts);
+    renderHOLCTracts(geoOffset,sjHolcTracts);
+    tractOutlines.end();
+    saveCanvas(tractOutlines, 'HOLCTractOutlines.png','png');
+
     flowField = new CensusDataFlowField();
     flowField.setFlowFieldNodes();
 }
@@ -227,17 +281,12 @@ function logPresets(){
     console.log(bigString);
 }
 
-let initialStartingPositions;
-
 function setup(){
     //create canvas and grab webGL context
+    // mainCanvas = createCanvas(4000,4000,WEBGL);
     mainCanvas = createCanvas(700,700,WEBGL);
     gl = mainCanvas.GL;
     randomShader = createShader(updateParticleDataVert,randomFrag);
-
-    //this is only used for making looping animations!
-    initialStartingPositions = createFramebuffer({width:dataTextureDimension,height:dataTextureDimension,format:FLOAT,textureFiltering:NEAREST,depth:false});
-    fillFBOwithRandom(initialStartingPositions,1.0,1.1);
 
     if(devMode)
         setup_DevMode();
@@ -245,7 +294,6 @@ function setup(){
         setup_Prerendered();
 
     initGL();
-    background(255);
 }
 
 function draw(){

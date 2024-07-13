@@ -57,6 +57,9 @@ class GuiCheckbox{
     value(){
         return this.checkbox.checked();
     }
+    set(state){
+        this.checkbox.checked(state);
+    }
 }
 
 class GuiDropdown{
