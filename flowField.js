@@ -1,6 +1,6 @@
 class FlowField{
-    constructor(settings){
-        this.settings = JSON.parse(JSON.stringify(settings));
+    constructor(){
+        this.settings = JSON.parse(JSON.stringify(defaultSettings));
 
         //data
         this.attractorArray = [];
