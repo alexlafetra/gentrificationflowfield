@@ -56,8 +56,8 @@ function convertTracts(dataIn,conversionSheet,oldGeoIDColumnName,newGeoIDColumnN
 
         //get the full GEOID
         let idToConvert = originalTract.get('GEOID').slice(-11);
-
-        let tractID = idToConvert.slice(-6);//6 digit id
+        //get 6 digit ID
+        let tractID = idToConvert.slice(-6);
 
         //get each instance of the geoid occuring in the conversion sheet
         let equivalents = conversionSheet.findRows(idToConvert,oldGeoIDColumnName);
@@ -68,11 +68,14 @@ function convertTracts(dataIn,conversionSheet,oldGeoIDColumnName,newGeoIDColumnN
             console.log(originalTract)
             console.log("Into "+numberOfEquivalents+" new tracts.");
         }
+
         //if there are no equivalents, then you don't need to convert it
         if(numberOfEquivalents == 0){
+            //so just add the row to the new data
             convertedData.addRow(originalTract);
             continue;
         }
+
         //creating the new data (or adding to existing data)
         for(let equivalentIndex = 0; equivalentIndex<numberOfEquivalents; equivalentIndex++){
             let newGeoID = equivalents[equivalentIndex].get(newGeoIDColumnName);
@@ -90,11 +93,9 @@ function convertTracts(dataIn,conversionSheet,oldGeoIDColumnName,newGeoIDColumnN
                     console.log(newTract.get('Total'));
                 }
                 
-                // console.log("A tract with ID "+newGeoID+" already exists. Adding weighted data to it.");
                 //Add the weighted data to it
                 for(let j = 0; j<dataIn.getColumnCount(); j++){
                     let newValue = parseFloat(newTract.get(j))+parseFloat(originalTract.get(j))/numberOfEquivalents;
-                    // newTract.set(j,String(newValue));
                     newTract.set(j,newValue);
                 }
             }
@@ -106,11 +107,9 @@ function convertTracts(dataIn,conversionSheet,oldGeoIDColumnName,newGeoIDColumnN
                     console.log("start:");
                     console.log(newTract.get('Total'));
                 }
-                // console.log("Creating a new tract with ID "+newGeoID);
                 //copy in each data point, and weight it
                 for(let j = 0; j<dataIn.getColumnCount(); j++){
                     let newValue = parseFloat(originalTract.get(j))/numberOfEquivalents;
-                    // newTract.set(j,String(newValue));
                     newTract.set(j,newValue);
                 }
             }
@@ -122,6 +121,7 @@ function convertTracts(dataIn,conversionSheet,oldGeoIDColumnName,newGeoIDColumnN
             newTract.convertedFrom = whichYear;
             //make sure to put the newly added-to tract back into the array
             convertedData.addRow(newTract);
+            
             if(!silently){
                 console.log("end:");
                 console.log(newTract.get('Total'));

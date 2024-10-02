@@ -1,7 +1,8 @@
 //this is a wrapper for the flow field that feeds it census data and handles the gui
+const defaultPresetIndex = 0;
 class CensusDataFlowField{
     constructor(){
-        this.censusDataPreset = censusDataPresets[0];
+        this.censusDataPreset = censusDataPresets[defaultPresetIndex];
         this.activeViewPreset = viewPresets[0];
         this.simulationParameterPreset = defaultSettings;
         this.flowField = new FlowField(defaultSettings);
@@ -30,10 +31,10 @@ class CensusDataFlowField{
 
         //preset data selector
         let options = [];
-        for(let i = 0; i<censusDataPresets.length; i++){
-            options.push(censusDataPresets[i].title);
+        for(let preset of censusDataPresets){
+            options.push(preset.title);
         }
-        this.presetSelector = new FlowFieldSelector(options,0,"Demographic Data",this.controlPanel);
+        this.presetSelector = new FlowFieldSelector(options,defaultPresetIndex,"Demographic Data",this.controlPanel);
 
         //preset view selector
         const geoOptionNames = [];
@@ -129,6 +130,7 @@ class CensusDataFlowField{
         return string;
     }
     normalizeNodesAndPushToFlowField(a,r){
+
         //clear out old nodes
         this.flowField.attractorArray = [];
         this.flowField.repulsorArray = [];
@@ -136,35 +138,68 @@ class CensusDataFlowField{
         let minR = r[0].strength;
         let maxR = r[r.length-1].strength;
 
+        let minA = a[a.length-1].strength;
         let maxA = a[0].strength;
         let i = 0;
         while(maxA == Infinity){
             maxA = a[i].strength;
             i++;
-            if(i >= a.length)
+            if(i >= a.length){
                 maxA = this.flowField.forceStrength;
+            }
         }
-        let minA = a[a.length-1].strength;
 
         let overallMax = max([maxA,maxR,minA,minR]);
         let overallMin = min([maxA,maxR,minA,minR]);
 
         for(let point of a){
-            if(point.strength == Infinity)
-                point.strength = maxA;
-            this.flowField.attractorArray.push(point.x);
-            this.flowField.attractorArray.push(point.y);
-            //normalize data, the biggest attractors/repulsors are = 1.0
-            let s = map(point.strength,overallMin,overallMax,0,1.0);
-            // let s = map(point.strength,minA,maxA,0,1.0);
-            this.flowField.attractorArray.push(s);
+
+            let s;
+            let strength = point.strength;
+            //skip attractors that are really repulsors
+            if(strength<0){
+                continue;
+            }
+            else{
+                // s = map(point.strength,minA,maxA,0,1.0);
+                s = map(strength,overallMin,overallMax,0,1.0);
+                this.flowField.attractorArray.push(point.x);
+                this.flowField.attractorArray.push(point.y);
+                this.flowField.attractorArray.push(s);
+            }
+
+ 
         }
         for(let point of r){
-            this.flowField.repulsorArray.push(point.x);
-            this.flowField.repulsorArray.push(point.y);
-            let s = map(point.strength,overallMax,overallMin,0,1.0);
-            // let s = map(point.strength,minR,maxR,0,1.0);
-            this.flowField.repulsorArray.push(s);
+            // let s = map(point.strength,overallMax,overallMin,0,1.0);
+            let s;
+            let strength = point.strength;
+            //skip repulsors which are really attractors
+            if(strength>0){
+                continue;
+            }
+            else{
+                // s = map(point.strength,minR,maxR,0,1.0);
+                s = map(strength,overallMax,overallMin,0.0,1.0);
+                this.flowField.repulsorArray.push(point.x);
+                this.flowField.repulsorArray.push(point.y);
+                this.flowField.repulsorArray.push(s);
+            }
+        }
+        if(this.censusDataPreset.title != testTitle || !testArray)
+            return;
+        console.log("comparing...");
+        let testArray2 = [this.flowField.attractorArray,this.flowField.repulsorArray];
+        for(let A = 0; A<testArray[0].length; A++){
+            if(testArray[0][A] != testArray2[0][A]){
+                console.log("hey! Attractors are different: #"+A);
+                console.log("old: "+testArray[0][A]+" new: "+testArray2[0][A]);
+            }
+        }
+        for(let R = 0; R<testArray[1].length; R++){
+            if(testArray[1][R] != testArray2[1][R]){
+                console.log("hey! Repulsors are different: #"+R);
+            }
         }
     }
     setFlowFieldNodesFromData(n){

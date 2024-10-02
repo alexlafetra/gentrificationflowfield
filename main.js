@@ -36,6 +36,7 @@ let censusDataPresets;
 
 //20 is a good base number
 const NUMBER_OF_ATTRACTORS = 300;
+// const NUMBER_OF_ATTRACTORS = 10;
 
 //controls whether or not the sim will load with prerendered data/choropleths
 //or with the full dataset, allowing you to explore/experiment
@@ -49,13 +50,15 @@ const defaultSettings = {
     particleAgeLimit : 1.2,//this*100 ::> how many frames particles live for
     particleVelocity : 0.004,
     forceMagnitude : 0.05,
-    randomMagnitude : 2.5,
-    repulsionStrength : 3.0,
-    attractionStrength : 3.0,
+    randomMagnitude : 0.0,
+    // repulsionStrength : 3.0,
+    // attractionStrength : 3.0,
+    repulsionStrength : 1.0,
+    attractionStrength : 1.0,
     canvasSize : 700,
     useParticleMask : true, //for preventing particles from entering oceans
     isActive : true,
-    renderFlowFieldDataTexture : false,
+    renderFlowFieldDataTexture : true,
     renderCensusTracts: true,
     renderAttractors : true,//render attractors
     renderRepulsors : true,//render repulsors
@@ -77,6 +80,22 @@ const viewPresets = [
         x: 2850,
         y: 2000,
         scale: 5000,
+        settings: {
+            particleVelocity: 0.05,
+            particleCount: 40000,
+            trailDecayValue: 0.04,
+            particleSize: 1.4,
+            randomMagnitude: 0.0,
+            renderCensusTracts:true,
+            attractionStrength:4.0,
+            repulsionStrength:4.0
+        }
+    },
+    {
+        name: "Marin",
+        x: 3000,
+        y: 2800,
+        scale: 4000,
         settings: {
             particleVelocity: 0.05,
             particleCount: 40000,
@@ -256,9 +275,10 @@ function setup_DevMode(){
     saveCanvas(tractOutlines, 'HOLCTractOutlines.png','png');
 
     flowField = new CensusDataFlowField();
-    flowField.setFlowFieldNodes();
+
 }
 
+let testArray,testTitle;
 function setup_Prerendered(){
     createPremadePresets();
     //the manual offset
@@ -266,6 +286,8 @@ function setup_Prerendered(){
     let s = mainCanvas.width*2/5;
     scale = {x:s,y:s*(-1)};//manually adjusting the scale to taste
     flowField = new CensusDataFlowField();
+    testArray = [flowField.flowField.attractorArray,flowField.flowField.repulsorArray];
+    testTitle = flowField.censusDataPreset.title;
 }
 
 function logPresets(){
@@ -287,7 +309,6 @@ function setup(){
     mainCanvas = createCanvas(700,700,WEBGL);
     gl = mainCanvas.GL;
     randomShader = createShader(updateParticleDataVert,randomFrag);
-
     if(devMode)
         setup_DevMode();
     else

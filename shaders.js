@@ -280,9 +280,10 @@ void main() {
     // float val = map((valA-valR)/2.0,valA,-valR,1.0,0.0);
     float val = valA - valR;
     val = map(val,-1.0,0.5,0.0,1.0);
+    // val = map(val,-1.0,1.0,0.0,1.0);
+
     // val = val*val/2.0;
-    gl_FragColor = mix(uRepulsionColor,uAttractionColor,val);
-}
+    gl_FragColor = mix(uRepulsionColor,uAttractionColor,val);}
 `;
 
 //Creating the flow field from a series of points
@@ -319,9 +320,10 @@ void main(){
     attraction /= `+NUMBER_OF_ATTRACTORS+glsl`.0;
     repulsion /= `+NUMBER_OF_ATTRACTORS+glsl`.0;
     //Storing both attraction and repulsion in the same texture
-    gl_FragColor = vec4(attraction,repulsion);
+    // gl_FragColor = vec4(attraction,repulsion);
+    // gl_FragColor = vec4(attraction,repulsion.x,1.0);
 
-    // gl_FragColor = vec4(attraction,repulsion.x,0.5*(repulsion.y+2.0));
+    gl_FragColor = vec4(attraction,repulsion.x,0.5*repulsion.y+1.0);
     //^^ Prevents alpha channel from clipping -- use this if you want to save the flow field to a texture!
 }
 `;

@@ -1,14 +1,16 @@
 class FlowField{
     constructor(){
-        this.settings = JSON.parse(JSON.stringify(defaultSettings));
 
+        //settings
+        this.settings = JSON.parse(JSON.stringify(defaultSettings));
+        
         //data
         this.attractorArray = [];
         this.repulsorArray = [];
 
         //Shaders
         this.updateParticleDataShader = createShader(updateParticleDataVert,updateParticleDataFrag);
-        this.updateAgeShader = createShader(updateParticleAgeVert,updateParticleAgeFrag);
+        this.updateParticleAgeShader = createShader(updateParticleAgeVert,updateParticleAgeFrag);
         this.drawParticlesShader = createShader(drawParticlesVS,drawParticlesFS);
         this.calcFlowFieldShader = createShader(calculateFlowFieldVert,calculateFlowFieldFrag);
         this.fadeParticleCanvasShader = createShader(fadeToTransparentVert,fadeToTransparentFrag);
@@ -45,11 +47,13 @@ class FlowField{
         this.settings = settings;
     }
     renderAttractors(){
+        const minForce = this.attractorArray[this.attractorArray.length-1];
+        const maxForce = this.attractorArray[2];
         for(let i = 0; i<this.attractorArray.length; i+=3){
             const x = (this.attractorArray[i])*scale.x+offset.x;
             const y = -(this.attractorArray[i+1]*scale.x)+offset.y;
             const force = this.attractorArray[i+2];
-            let size = map(this.attractorArray[i+2],this.attractorArray[this.attractorArray.length-1],this.attractorArray[2],1,10);//scaling size based on the min/max size of attractors
+            let size = map(force,minForce,maxForce,1,12);//scaling size based on the min/max size of attractors
             const alpha = map(size,1,10,0,255);
             fill(this.settings.attractionColor,alpha);
             noStroke();
@@ -69,12 +73,16 @@ class FlowField{
         }
     }
     updateFlow(){
+        // this.flowFieldTexture.remove();
+        // this.flowFieldTexture = null;
+        // this.flowFieldTexture = createFramebuffer({width:this.settings.canvasSize,height:this.settings.canvasSize,format:FLOAT,textureFiltering:NEAREST,depth:false});//holds the flowfield data attraction = (r,g) ; repulsion = (b,a)
+
         //ANY drawing to this texture will affect the flow field data
         //Flow field data is stored as attractors(x,y) => r,g; repulsors(x,y) => b,a;
         this.flowFieldTexture.begin();
-        //so you need to clear all the color data each frame
-        clear();
+        background(0,0);
         shader(this.calcFlowFieldShader);
+        clear();
         //just a note: attractors and repulsors are FLAT arrays of x,y,strength values
         //Which means they're just a 1x(nx3) flat vector, not an nx3 multidimensional vector
         this.calcFlowFieldShader.setUniform('uCoordinateOffset',[offset.x/mainCanvas.width+0.5,offset.y/mainCanvas.height+0.5]);//adjusting coordinate so they're between 0,1 (instead of -width/2,+width/2)
@@ -111,9 +119,9 @@ class FlowField{
     }
     updateAge(){
         this.particleAgeTextureBuffer.begin();
-        shader(this.updateAgeShader);
-        this.updateAgeShader.setUniform('uAgeLimit',this.settings.particleAgeLimit);
-        this.updateAgeShader.setUniform('uAgeTexture',this.particleAgeTexture);
+        shader(this.updateParticleAgeShader);
+        this.updateParticleAgeShader.setUniform('uAgeLimit',this.settings.particleAgeLimit);
+        this.updateParticleAgeShader.setUniform('uAgeTexture',this.particleAgeTexture);
         quad(-1,-1,1,-1,1,1,-1,1);
         this.particleAgeTextureBuffer.end();
         [this.particleAgeTexture,this.particleAgeTextureBuffer] = [this.particleAgeTextureBuffer,this.particleAgeTexture];
