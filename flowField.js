@@ -47,13 +47,10 @@ class FlowField{
         this.settings = settings;
     }
     renderAttractors(){
-        const minForce = this.attractorArray[this.attractorArray.length-1];
-        const maxForce = this.attractorArray[2];
         for(let i = 0; i<this.attractorArray.length; i+=3){
             const x = (this.attractorArray[i])*scale.x+offset.x;
             const y = -(this.attractorArray[i+1]*scale.x)+offset.y;
-            const force = this.attractorArray[i+2];
-            let size = map(force,minForce,maxForce,1,12);//scaling size based on the min/max size of attractors
+            const size = map(this.attractorArray[i+2],this.attractorArray[this.attractorArray.length-1],this.attractorArray[2],1,12);//scaling size
             const alpha = map(size,1,10,0,255);
             fill(this.settings.attractionColor,alpha);
             noStroke();
@@ -64,7 +61,6 @@ class FlowField{
         for(let i = 0; i<this.repulsorArray.length; i+=3){
             const x = (this.repulsorArray[i])*scale.x+offset.x;
             const y = -(this.repulsorArray[i+1]*scale.x)+offset.y;
-            const force = this.attractorArray[i+2];
             const size = map(this.repulsorArray[i+2],this.repulsorArray[this.repulsorArray.length-1],this.repulsorArray[2],10,1);//scaling size
             const alpha = map(size,1,10,0,255);
             fill(this.settings.repulsionColor,alpha);
@@ -80,9 +76,11 @@ class FlowField{
         //ANY drawing to this texture will affect the flow field data
         //Flow field data is stored as attractors(x,y) => r,g; repulsors(x,y) => b,a;
         this.flowFieldTexture.begin();
-        background(0,0);
-        shader(this.calcFlowFieldShader);
         clear();
+        blendMode(REPLACE);
+        fill(255,255);
+        rect(-this.flowFieldTexture.width/2,-this.flowFieldTexture.height/2,this.flowFieldTexture.width,this.flowFieldTexture.height);
+        shader(this.calcFlowFieldShader);
         //just a note: attractors and repulsors are FLAT arrays of x,y,strength values
         //Which means they're just a 1x(nx3) flat vector, not an nx3 multidimensional vector
         this.calcFlowFieldShader.setUniform('uCoordinateOffset',[offset.x/mainCanvas.width+0.5,offset.y/mainCanvas.height+0.5]);//adjusting coordinate so they're between 0,1 (instead of -width/2,+width/2)

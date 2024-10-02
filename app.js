@@ -189,15 +189,14 @@ class CensusDataFlowField{
         if(this.censusDataPreset.title != testTitle || !testArray)
             return;
         console.log("comparing...");
-        let testArray2 = [this.flowField.attractorArray,this.flowField.repulsorArray];
         for(let A = 0; A<testArray[0].length; A++){
-            if(testArray[0][A] != testArray2[0][A]){
+            if(testArray[0][A] != this.flowField.attractorArray[A]){
                 console.log("hey! Attractors are different: #"+A);
                 console.log("old: "+testArray[0][A]+" new: "+testArray2[0][A]);
             }
         }
         for(let R = 0; R<testArray[1].length; R++){
-            if(testArray[1][R] != testArray2[1][R]){
+            if(testArray[1][R] != this.flowField.repulsorArray[R]){
                 console.log("hey! Repulsors are different: #"+R);
             }
         }

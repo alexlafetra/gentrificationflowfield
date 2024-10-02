@@ -53,8 +53,8 @@ const defaultSettings = {
     randomMagnitude : 0.0,
     // repulsionStrength : 3.0,
     // attractionStrength : 3.0,
-    repulsionStrength : 1.0,
-    attractionStrength : 1.0,
+    repulsionStrength : 1.5,
+    attractionStrength : 1.5,
     canvasSize : 700,
     useParticleMask : true, //for preventing particles from entering oceans
     isActive : true,
@@ -62,6 +62,7 @@ const defaultSettings = {
     renderCensusTracts: true,
     renderAttractors : true,//render attractors
     renderRepulsors : true,//render repulsors
+
     repulsionColor : [20,0,180],
     attractionColor : [255,0,120],
     mouseInteraction : false
