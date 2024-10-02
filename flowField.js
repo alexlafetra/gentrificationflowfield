@@ -13,6 +13,7 @@ class FlowField{
         this.updateParticleAgeShader = createShader(updateParticleAgeVert,updateParticleAgeFrag);
         this.drawParticlesShader = createShader(drawParticlesVS,drawParticlesFS);
         this.calcFlowFieldShader = createShader(calculateFlowFieldVert,calculateFlowFieldFrag);
+        this.calcFlowMagShader = createShader(calculateFlowFieldVert,calculateFlowMagFrag);
         this.fadeParticleCanvasShader = createShader(fadeToTransparentVert,fadeToTransparentFrag);
 
         //Texture Buffers
@@ -21,6 +22,7 @@ class FlowField{
         this.particleDataTexture = createFramebuffer({width:dataTextureDimension,height:dataTextureDimension,format:FLOAT,textureFiltering:NEAREST,depth:false});//holds velocity and position data
         this.particleDataTextureBuffer = createFramebuffer({width:dataTextureDimension,height:dataTextureDimension,format:FLOAT,textureFiltering:NEAREST,depth:false});
         this.flowFieldTexture = createFramebuffer({width:this.settings.canvasSize,height:this.settings.canvasSize,format:FLOAT,textureFiltering:NEAREST,depth:false});//holds the flowfield data attraction = (r,g) ; repulsion = (b,a)
+        this.flowMagnitudeTexture = createFramebuffer({width:this.settings.canvasSize,height:this.settings.canvasSize,format:FLOAT,textureFiltering:NEAREST,depth:false});//holds the magnitude of attraction (r) and repulsion (b) forces
         this.particleMask = createFramebuffer({width:mainCanvas.width,height:mainCanvas.height,depth:false});//holds the particle mask data (white is tracts w/people in them, black is empty tracts)
         //not super necessary, but makes it so particles return to their starting position (lets you make seamless looping gifs)
         this.initialStartingPositions = createFramebuffer({width:dataTextureDimension,height:dataTextureDimension,format:FLOAT,textureFiltering:NEAREST,depth:false});
@@ -46,27 +48,25 @@ class FlowField{
     updateSettings(settings){
         this.settings = settings;
     }
-    renderAttractors(){
-        for(let i = 0; i<this.attractorArray.length; i+=3){
-            const x = (this.attractorArray[i])*scale.x+offset.x;
-            const y = -(this.attractorArray[i+1]*scale.x)+offset.y;
-            const size = map(this.attractorArray[i+2],this.attractorArray[this.attractorArray.length-1],this.attractorArray[2],1,12);//scaling size
-            const alpha = map(size,1,10,0,255);
-            fill(this.settings.attractionColor,alpha);
+    renderNodes(array,nodeColor){
+        for(let i = 0; i<array.length-3; i+=3){
+            const x = (array[i])*scale.x+offset.x;
+            const y = -(array[i+1]*scale.x)+offset.y;
+            const force = array[i+2];
+            //if force is 0, skip it
+            if(force == 0)
+                continue;
+            let size = 10*force*force;
+            fill(nodeColor);
             noStroke();
             ellipse(x,y,size,size);
         }
     }
+    renderAttractors(){
+        this.renderNodes(this.attractorArray,this.settings.attractionColor);
+    }
     renderRepulsors(){
-        for(let i = 0; i<this.repulsorArray.length; i+=3){
-            const x = (this.repulsorArray[i])*scale.x+offset.x;
-            const y = -(this.repulsorArray[i+1]*scale.x)+offset.y;
-            const size = map(this.repulsorArray[i+2],this.repulsorArray[this.repulsorArray.length-1],this.repulsorArray[2],10,1);//scaling size
-            const alpha = map(size,1,10,0,255);
-            fill(this.settings.repulsionColor,alpha);
-            noStroke();
-            ellipse(x,y,size,size);
-        }
+        this.renderNodes(this.repulsorArray,this.settings.repulsionColor);
     }
     updateFlow(){
         // this.flowFieldTexture.remove();
@@ -76,11 +76,9 @@ class FlowField{
         //ANY drawing to this texture will affect the flow field data
         //Flow field data is stored as attractors(x,y) => r,g; repulsors(x,y) => b,a;
         this.flowFieldTexture.begin();
-        clear();
-        blendMode(REPLACE);
-        fill(255,255);
-        rect(-this.flowFieldTexture.width/2,-this.flowFieldTexture.height/2,this.flowFieldTexture.width,this.flowFieldTexture.height);
+        background(0,0);
         shader(this.calcFlowFieldShader);
+        clear();
         //just a note: attractors and repulsors are FLAT arrays of x,y,strength values
         //Which means they're just a 1x(nx3) flat vector, not an nx3 multidimensional vector
         this.calcFlowFieldShader.setUniform('uCoordinateOffset',[offset.x/mainCanvas.width+0.5,offset.y/mainCanvas.height+0.5]);//adjusting coordinate so they're between 0,1 (instead of -width/2,+width/2)
@@ -92,6 +90,25 @@ class FlowField{
         this.calcFlowFieldShader.setUniform('uRepulsionStrength',this.settings.repulsionStrength);
         rect(-this.flowFieldTexture.width/2,-this.flowFieldTexture.height/2,this.flowFieldTexture.width,this.flowFieldTexture.height);
         this.flowFieldTexture.end();
+
+        this.updateFlowMagnitude();
+    }
+    updateFlowMagnitude(){
+        this.flowMagnitudeTexture.begin();
+        background(0,0);
+        shader(this.calcFlowMagShader);
+        clear();
+        //just a note: attractors and repulsors are FLAT arrays of x,y,strength values
+        //Which means they're just a 1x(nx3) flat vector, not an nx3 multidimensional vector
+        this.calcFlowMagShader.setUniform('uCoordinateOffset',[offset.x/mainCanvas.width+0.5,offset.y/mainCanvas.height+0.5]);//adjusting coordinate so they're between 0,1 (instead of -width/2,+width/2)
+        this.calcFlowMagShader.setUniform('uScale',scale.x);
+        this.calcFlowMagShader.setUniform('uDimensions',mainCanvas.width);
+        this.calcFlowMagShader.setUniform('uAttractors',this.attractorArray);
+        this.calcFlowMagShader.setUniform('uRepulsors',this.repulsorArray);
+        this.calcFlowMagShader.setUniform('uAttractionStrength',this.settings.attractionStrength);
+        this.calcFlowMagShader.setUniform('uRepulsionStrength',this.settings.repulsionStrength);
+        rect(-this.flowMagnitudeTexture.width/2,-this.flowMagnitudeTexture.height/2,this.flowMagnitudeTexture.width,this.flowMagnitudeTexture.height);
+        this.flowMagnitudeTexture.end();
     }
     updateParticleData(){
         this.particleDataTextureBuffer.begin();
@@ -111,6 +128,7 @@ class FlowField{
         this.updateParticleDataShader.setUniform('uParticleTrailTexture',this.particleCanvas);
         this.updateParticleDataShader.setUniform('uParticleMask',this.particleMask);
         this.updateParticleDataShader.setUniform('uUseMaskTexture',this.settings.useParticleMask);
+        this.updateParticleDataShader.setUniform('uFlowInfluence',this.settings.flowInfluence);
         quad(-1,-1,1,-1,1,1,-1,1);
         this.particleDataTextureBuffer.end();
         [this.particleDataTexture,this.particleDataTextureBuffer] = [this.particleDataTextureBuffer,this.particleDataTexture];
@@ -150,11 +168,15 @@ class FlowField{
         gl.activeTexture(gl.TEXTURE0);
         gl.bindTexture(gl.TEXTURE_2D, this.particleDataTexture.colorTexture);
         gl.activeTexture(gl.TEXTURE1);
-        gl.bindTexture(gl.TEXTURE_2D, this.flowFieldTexture.colorTexture);
+        // gl.bindTexture(gl.TEXTURE_2D, this.flowFieldTexture.colorTexture);
+        gl.bindTexture(gl.TEXTURE_2D, this.flowMagnitudeTexture.colorTexture);
+
         //running the particle-drawing shader
         shader(this.drawParticlesShader);
         this.drawParticlesShader.setUniform('uPositionTexture',this.particleDataTexture);
-        this.drawParticlesShader.setUniform('uColorTexture',this.flowFieldTexture);
+        // this.drawParticlesShader.setUniform('uColorTexture',this.flowFieldTexture);
+        this.drawParticlesShader.setUniform('uColorTexture',this.flowMagnitudeTexture);
+
         this.drawParticlesShader.setUniform('uRepulsionColor',[this.settings.repulsionColor._array[0],this.settings.repulsionColor._array[1],this.settings.repulsionColor._array[2],1.0]);
         this.drawParticlesShader.setUniform('uAttractionColor',[this.settings.attractionColor._array[0],this.settings.attractionColor._array[1],this.settings.attractionColor._array[2],1.0]);
         this.drawParticlesShader.setUniform('uTextureDimensions',[dataTextureDimension,dataTextureDimension]);
@@ -179,8 +201,11 @@ class FlowField{
     }
     renderData(){
         image(this.particleDataTexture,-width/2,-height/2,width/3,height/3);
+        fill(0);
+        noStroke();
+        rect(-width/2,-height/2+height/3,width/3,2*height/3);
         image(this.flowFieldTexture,-width/2,-height/2+height/3,width/3,height/3);
-        image(this.particleMask,-width/2,-height/2+2*height/3,width/3,height/3);
+        image(this.flowMagnitudeTexture,-width/2,-height/2+2*height/3,width/3,height/3);
     }
     render(){
         if(this.settings.renderCensusTracts)
@@ -193,7 +218,7 @@ class FlowField{
         if(this.settings.renderRepulsors)
             this.renderRepulsors();
         if(this.settings.renderFlowFieldDataTexture){
-            image(this.flowFieldTexture,-height/2,-height/2,width,height);
+            // image(this.flowFieldTexture,-height/2,-height/2,width,height);
             this.renderData();
         }
     }

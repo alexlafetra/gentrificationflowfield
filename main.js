@@ -49,12 +49,12 @@ const defaultSettings = {
     particleSize : 1.4,
     particleAgeLimit : 1.2,//this*100 ::> how many frames particles live for
     particleVelocity : 0.004,
-    forceMagnitude : 0.05,
+    flowInfluence : 1.0,
     randomMagnitude : 0.0,
     // repulsionStrength : 3.0,
     // attractionStrength : 3.0,
-    repulsionStrength : 1.5,
-    attractionStrength : 1.5,
+    repulsionStrength : 0.6,
+    attractionStrength : 0.6,
     canvasSize : 700,
     useParticleMask : true, //for preventing particles from entering oceans
     isActive : true,
@@ -62,7 +62,6 @@ const defaultSettings = {
     renderCensusTracts: true,
     renderAttractors : true,//render attractors
     renderRepulsors : true,//render repulsors
-
     repulsionColor : [20,0,180],
     attractionColor : [255,0,120],
     mouseInteraction : false
@@ -309,7 +308,7 @@ function setup(){
     // mainCanvas = createCanvas(4000,4000,WEBGL);
     mainCanvas = createCanvas(700,700,WEBGL);
     gl = mainCanvas.GL;
-    randomShader = createShader(updateParticleDataVert,randomFrag);
+    randomShader = createShader(randomVert,randomFrag);
     if(devMode)
         setup_DevMode();
     else

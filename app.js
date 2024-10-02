@@ -54,7 +54,7 @@ class CensusDataFlowField{
         this.repulsionStrengthSlider = new GuiSlider(0,10.0,this.flowField.settings.repulsionStrength,0.001,"Repulsion",this.controlPanel);
 
         this.particleSlider = new GuiSlider(1,dataTextureDimension*dataTextureDimension,this.flowField.settings.particleCount,1,"Particles",this.controlPanel);
-        this.decaySlider = new GuiSlider(0.0,0.5,this.flowField.settings.trailDecayValue,0.001,"Decay",this.controlPanel);
+        this.decaySlider = new GuiSlider(0.0,0.1,this.flowField.settings.trailDecayValue,0.001,"Decay",this.controlPanel);
         this.particleSizeSlider = new GuiSlider(0,10.0,this.flowField.settings.particleSize,0.1,"Size",this.controlPanel);
 
         this.activeCheckbox = new GuiCheckbox("Run Simulation",this.flowField.settings.isActive,this.controlPanel);
@@ -141,7 +141,10 @@ class CensusDataFlowField{
         let minA = a[a.length-1].strength;
         let maxA = a[0].strength;
         let i = 0;
+        console.log(a);
         while(maxA == Infinity){
+            console.log("infinite strength!");
+            console.log(a[i]);
             maxA = a[i].strength;
             i++;
             if(i >= a.length){
@@ -149,20 +152,21 @@ class CensusDataFlowField{
             }
         }
 
+
         let overallMax = max([maxA,maxR,minA,minR]);
         let overallMin = min([maxA,maxR,minA,minR]);
 
         for(let point of a){
-
-            let s;
             let strength = point.strength;
             //skip attractors that are really repulsors
             if(strength<0){
+                this.flowField.attractorArray.push(0);
+                this.flowField.attractorArray.push(0);
+                this.flowField.attractorArray.push(0);
                 continue;
             }
             else{
-                // s = map(point.strength,minA,maxA,0,1.0);
-                s = map(strength,overallMin,overallMax,0,1.0);
+                let s = map(strength,overallMin,overallMax,0,1.0);
                 this.flowField.attractorArray.push(point.x);
                 this.flowField.attractorArray.push(point.y);
                 this.flowField.attractorArray.push(s);
@@ -170,17 +174,23 @@ class CensusDataFlowField{
 
  
         }
+        console.log("minR:"+minR);
+        console.log("maxR:"+maxR);
+        console.log("overallMin:"+overallMin);
+        console.log("overallMax:"+overallMax);
         for(let point of r){
-            // let s = map(point.strength,overallMax,overallMin,0,1.0);
-            let s;
             let strength = point.strength;
             //skip repulsors which are really attractors
             if(strength>0){
+                console.log("hey! repulsor has a positive strength value:"+point.strength);
+                // console.log(point);
+                this.flowField.attractorArray.push(0);
+                this.flowField.attractorArray.push(0);
+                this.flowField.attractorArray.push(0);
                 continue;
             }
             else{
-                // s = map(point.strength,minR,maxR,0,1.0);
-                s = map(strength,overallMax,overallMin,0.0,1.0);
+                let s = map(strength,overallMax,overallMin,0.0,1.0);
                 this.flowField.repulsorArray.push(point.x);
                 this.flowField.repulsorArray.push(point.y);
                 this.flowField.repulsorArray.push(s);
