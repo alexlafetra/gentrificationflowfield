@@ -21,6 +21,7 @@ let flowField;
 let holcTexture;
 let tractOutlines;
 let presetFlowMask;
+// let backgroundTexture;
 
 let gl;
 let mainCanvas;
@@ -35,8 +36,8 @@ let drawParticlesProgLocs;
 let censusDataPresets;
 
 //20 is a good base number
-const NUMBER_OF_ATTRACTORS = 300;
-// const NUMBER_OF_ATTRACTORS = 10;
+let NUMBER_OF_ATTRACTORS = 500;
+let NUMBER_OF_REPULSORS = 500;
 
 //controls whether or not the sim will load with prerendered data/choropleths
 //or with the full dataset, allowing you to explore/experiment
@@ -135,14 +136,14 @@ const viewPresets = [
         y: 1450,
         scale: 3000,
         settings: {
-            particleVelocity: 0.05,
+            particleVelocity: 0.004,
             particleCount: 40000,
             trailDecayValue: 0.02,
             particleSize: 1.4,
             randomMagnitude: 0.0,
             renderCensusTracts:true,
-            attractionStrength:3.0,
-            repulsionStrength:3.0
+            attractionStrength:1.0,
+            repulsionStrength:2.0
         }
     },
     {
@@ -210,9 +211,10 @@ function saveFlowFieldGif(){
 
 
 function loadPresetMaps(){
-    presetFlowMask = loadImage("data/Prerendered/flowFieldMask.png");
-    tractOutlines = loadImage("data/Prerendered/censusTractOutlines.png");
-    holcTexture = loadImage("data/Prerendered/HOLCTractOutlines.png");
+    presetFlowMask = loadImage("data/prerendered/flowFieldMask.png");
+    tractOutlines = loadImage("data/prerendered/censusTractOutlines.png");
+    holcTexture = loadImage("data/prerendered/HOLCTractOutlines.png");
+    // backgroundTexture = loadImage("data/prerendered/background.png");
 }
 
 function preload(){
@@ -246,7 +248,6 @@ function renderTransformedImage(img,sf = mainCanvas.width*2/5){
 
 function setup_DevMode(){
     createPresets();
-
     //parsing data and attaching it to tract geometry
     setupMapData();
 
@@ -258,6 +259,18 @@ function setup_DevMode(){
     let s = mainCanvas.width*2/5;
     scale = {x:s,y:s*(-1)};//manually adjusting the scale to taste
 
+    //drawing background
+    tractOutlines = createFramebuffer({width:width,height:height});
+    tractOutlines.begin();
+    // blendMode(REPLACE);
+    background(0);
+    noStroke();
+    renderTracts(geoOffset,(t) => fill(255,0));
+    tractOutlines.end();
+    saveCanvas(tractOutlines,'background.png','png');
+
+    //drawing tract outlines
+
     // tractOutlines = createFramebuffer({width:width,height:height});
     // tractOutlines.begin();
     // strokeWeight(1);
@@ -265,14 +278,16 @@ function setup_DevMode(){
     // tractOutlines.end();
     // saveCanvas(tractOutlines, 'censusTractOutlines.png','png');
 
-    tractOutlines = createFramebuffer({width:width,height:height});
-    tractOutlines.begin();
-    strokeWeight(1);
-    renderHOLCTracts(geoOffset,oakHolcTracts);
-    renderHOLCTracts(geoOffset,sfHolcTracts);
-    renderHOLCTracts(geoOffset,sjHolcTracts);
-    tractOutlines.end();
-    saveCanvas(tractOutlines, 'HOLCTractOutlines.png','png');
+    //drawing HOLC outlines
+
+    // tractOutlines = createFramebuffer({width:width,height:height});
+    // tractOutlines.begin();
+    // strokeWeight(1);
+    // renderHOLCTracts(geoOffset,oakHolcTracts);
+    // renderHOLCTracts(geoOffset,sfHolcTracts);
+    // renderHOLCTracts(geoOffset,sjHolcTracts);
+    // tractOutlines.end();
+    // saveCanvas(tractOutlines, 'HOLCTractOutlines.png','png');
 
     flowField = new CensusDataFlowField();
 
@@ -294,10 +309,8 @@ function logPresets(){
     let i = 0;
     let bigString;
     for(let preset of censusDataPresets){
-        let a = getSignificantPoints(NUMBER_OF_ATTRACTORS,preset.demographicFunction);
-        let r = getLeastSignificantPoints(NUMBER_OF_ATTRACTORS,preset.demographicFunction);
-        bigString += "\nconst preset"+i+"Attractors = "+JSON.stringify(a)+";";
-        bigString += "\nconst preset"+i+"Repulsors = "+JSON.stringify(r)+";";
+        let nodes = createNodesFromTracts(preset.demographicFunction);
+        bigString += "const preset"+i+"Nodes = "+JSON.stringify(nodes)+";\n";
         i++;
     }
     console.log(bigString);
@@ -309,6 +322,7 @@ function setup(){
     mainCanvas = createCanvas(700,700,WEBGL);
     gl = mainCanvas.GL;
     randomShader = createShader(randomVert,randomFrag);
+
     if(devMode)
         setup_DevMode();
     else

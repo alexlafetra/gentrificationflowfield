@@ -123,108 +123,70 @@ class CensusDataFlowField{
         }
     }
     logFlowFieldData(presetName){
-        let a = getSignificantPoints(NUMBER_OF_ATTRACTORS,this.censusDataPreset.demographicFunction);
-        let r = getLeastSignificantPoints(NUMBER_OF_ATTRACTORS,this.censusDataPreset.demographicFunction);
-        let string = presetName + "Attractors = "+JSON.stringify(a)+"\n"+presetName+"Repulsors = "+JSON.stringify(r)+";\n";
+        let nodes = createNodesFromTracts(this.censusDataPreset.demographicFunction);
+        let string = presetName + "Nodes = "+JSON.stringify(nodes);
         console.log(string);
         return string;
     }
-    normalizeNodesAndPushToFlowField(a,r){
+    normalizeNodesAndPushToFlowField(nodes){
+        //sort nodes by strength
+        nodes.sort((a,b) => {
+                if(a.strength>b.strength)
+                    return 1;
+                else if(a.strength<b.strength)
+                    return -1;
+                else return 0;
+            });
+        let mostNegative = nodes[0].strength;
+        let mostPositive = nodes[nodes.length-1].strength;
+
+        this.flowField.nodes = nodes;
 
         //clear out old nodes
         this.flowField.attractorArray = [];
         this.flowField.repulsorArray = [];
+        NUMBER_OF_ATTRACTORS = 0;
+        NUMBER_OF_REPULSORS = 0;
 
-        let minR = r[0].strength;
-        let maxR = r[r.length-1].strength;
-
-        let minA = a[a.length-1].strength;
-        let maxA = a[0].strength;
-        let i = 0;
-        console.log(a);
-        while(maxA == Infinity){
-            console.log("infinite strength!");
-            console.log(a[i]);
-            maxA = a[i].strength;
-            i++;
-            if(i >= a.length){
-                maxA = this.flowField.forceStrength;
+        //normalize nodes and push into corresponding array
+        //start from the front
+        for(let i = 0; i<nodes.length; i++){
+            let strength = nodes[i].strength;
+            let s = map(strength,mostNegative,mostPositive,0.0,1.0);
+            if(strength >= 0){
+                break;
             }
+            this.flowField.repulsorArray.push(nodes[i].x);
+            this.flowField.repulsorArray.push(nodes[i].y);
+            this.flowField.repulsorArray.push(s);
+            NUMBER_OF_REPULSORS++;
         }
-
-
-        let overallMax = max([maxA,maxR,minA,minR]);
-        let overallMin = min([maxA,maxR,minA,minR]);
-
-        for(let point of a){
-            let strength = point.strength;
-            //skip attractors that are really repulsors
-            if(strength<0){
-                this.flowField.attractorArray.push(0);
-                this.flowField.attractorArray.push(0);
-                this.flowField.attractorArray.push(0);
-                continue;
+        //then from the back
+        for(let i = nodes.length-1; i>=0; i--){
+            let strength = nodes[i].strength;
+            let s = map(strength,mostNegative,mostPositive,0.0,1.0);
+            if(strength <= 0){
+                break;
             }
-            else{
-                let s = map(strength,overallMin,overallMax,0,1.0);
-                this.flowField.attractorArray.push(point.x);
-                this.flowField.attractorArray.push(point.y);
-                this.flowField.attractorArray.push(s);
-            }
-
- 
-        }
-        console.log("minR:"+minR);
-        console.log("maxR:"+maxR);
-        console.log("overallMin:"+overallMin);
-        console.log("overallMax:"+overallMax);
-        for(let point of r){
-            let strength = point.strength;
-            //skip repulsors which are really attractors
-            if(strength>0){
-                console.log("hey! repulsor has a positive strength value:"+point.strength);
-                // console.log(point);
-                this.flowField.attractorArray.push(0);
-                this.flowField.attractorArray.push(0);
-                this.flowField.attractorArray.push(0);
-                continue;
-            }
-            else{
-                let s = map(strength,overallMax,overallMin,0.0,1.0);
-                this.flowField.repulsorArray.push(point.x);
-                this.flowField.repulsorArray.push(point.y);
-                this.flowField.repulsorArray.push(s);
-            }
-        }
-        if(this.censusDataPreset.title != testTitle || !testArray)
-            return;
-        console.log("comparing...");
-        for(let A = 0; A<testArray[0].length; A++){
-            if(testArray[0][A] != this.flowField.attractorArray[A]){
-                console.log("hey! Attractors are different: #"+A);
-                console.log("old: "+testArray[0][A]+" new: "+testArray2[0][A]);
-            }
-        }
-        for(let R = 0; R<testArray[1].length; R++){
-            if(testArray[1][R] != this.flowField.repulsorArray[R]){
-                console.log("hey! Repulsors are different: #"+R);
-            }
+            this.flowField.attractorArray.push(nodes[i].x);
+            this.flowField.attractorArray.push(nodes[i].y);
+            this.flowField.attractorArray.push(s);
+            NUMBER_OF_ATTRACTORS++;
         }
     }
-    setFlowFieldNodesFromData(n){
+    setFlowFieldNodesFromData(){
         //you need to make sure these don't return any points with infinite strength!
         //This can happen where there are '0' people in a tract and you're dividing by that pop number
         //And it messes up the relative scaling (will crash the calculation bc /0 error can happen)
-        const attractorObjects = getSignificantPoints(n,this.censusDataPreset.demographicFunction);
-        const repulsorObjects = getLeastSignificantPoints(n,this.censusDataPreset.demographicFunction);
-        this.normalizeNodesAndPushToFlowField(attractorObjects,repulsorObjects);
+        let nodes = createNodesFromTracts(this.censusDataPreset.demographicFunction);
+        this.normalizeNodesAndPushToFlowField(nodes);
     }
     setFlowFieldNodesFromPreset(){
-        this.normalizeNodesAndPushToFlowField(this.censusDataPreset.attractors,this.censusDataPreset.repulsors);
+        this.normalizeNodesAndPushToFlowField(this.censusDataPreset.nodes);
     }
     setFlowFieldNodes(){
         if(devMode)
-            this.setFlowFieldNodesFromData(NUMBER_OF_ATTRACTORS);
+            this.setFlowFieldNodesFromData();
         else
             this.setFlowFieldNodesFromPreset();
     }

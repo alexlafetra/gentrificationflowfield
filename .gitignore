@@ -1,4 +1,6 @@
 .DS_Store
 data/.DS_Store
 readme/recordings
-data/Census/Raw Data
+data/Geographic
+data/Census
+data/screenshots
