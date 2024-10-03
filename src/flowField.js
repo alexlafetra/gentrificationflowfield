@@ -3,6 +3,9 @@ class FlowField{
 
         //settings
         this.settings = JSON.parse(JSON.stringify(defaultSettings));
+
+        this.NUMBER_OF_ATTRACTORS = 0;
+        this.NUMBER_OF_REPULSORS = 0;
         
         //data
         this.attractorArray = [];
@@ -12,9 +15,10 @@ class FlowField{
         this.updateParticleDataShader = createShader(updateParticleDataVert,updateParticleDataFrag);
         this.updateParticleAgeShader = createShader(updateParticleAgeVert,updateParticleAgeFrag);
         this.drawParticlesShader = createShader(drawParticlesVS,drawParticlesFS);
-        this.calcFlowFieldShader = createShader(calculateFlowFieldVert,calculateFlowFieldFrag);
-        this.calcFlowMagShader = createShader(calculateFlowFieldVert,calculateFlowMagFrag);
         this.fadeParticleCanvasShader = createShader(fadeToTransparentVert,fadeToTransparentFrag);
+        //these two are recompiled every time the flow field is updated, so don't make them yet:
+        this.calcFlowFieldShader;
+        this.calcFlowMagShader;
 
         //Texture Buffers
         this.particleAgeTexture = createFramebuffer({width:dataTextureDimension,height:dataTextureDimension,format:FLOAT,textureFiltering:NEAREST,depth:false});//holds age data
@@ -63,13 +67,60 @@ class FlowField{
             ellipse(x,y,force,force);
         }
     }
-    renderAttractors(){
-        this.renderNodes("ATTRACTORS",100);
-    }
-    renderRepulsors(){
-        this.renderNodes("REPULSORS",100);
+    loadNodes(nodes){
+        //sort nodes by strength
+        nodes.sort((a,b) => {
+            if(a.strength>b.strength)
+                return 1;
+            else if(a.strength<b.strength)
+                return -1;
+            else return 0;
+        });
+        let mostNegative = nodes[0].strength;
+        let mostPositive = nodes[nodes.length-1].strength;
+
+        this.nodes = nodes;
+
+        //clear out old nodes
+        this.attractorArray = [];
+        this.repulsorArray = [];
+        this.NUMBER_OF_ATTRACTORS = 0;
+        this.NUMBER_OF_REPULSORS = 0;
+
+        //normalize nodes and push into corresponding array
+        //start from the front
+        for(let i = 0; i<nodes.length; i++){
+            if(this.NUMBER_OF_REPULSORS>=500)
+                break;
+            let strength = nodes[i].strength;
+            let s = map(strength,mostNegative,mostPositive,0.0,1.0);
+            if(strength >= 0){
+                break;
+            }
+            this.repulsorArray.push(nodes[i].x);
+            this.repulsorArray.push(nodes[i].y);
+            this.repulsorArray.push(s);
+            this.NUMBER_OF_REPULSORS++;
+        }
+        //then from the back
+        for(let i = nodes.length-1; i>=0; i--){
+            if(this.NUMBER_OF_ATTRACTORS>=500)
+                break;
+            let strength = nodes[i].strength;
+            let s = map(strength,mostNegative,mostPositive,0.0,1.0);
+            if(strength <= 0){
+                break;
+            }
+            this.attractorArray.push(nodes[i].x);
+            this.attractorArray.push(nodes[i].y);
+            this.attractorArray.push(s);
+            this.NUMBER_OF_ATTRACTORS++;
+        }
+        this.updateFlow();
     }
     updateFlow(){
+        const newShader = createFlowFieldShader(this.NUMBER_OF_ATTRACTORS,this.NUMBER_OF_REPULSORS);
+        this.calcFlowFieldShader = createShader(newShader.vertexShader,newShader.fragmentShader);
         //ANY drawing to this texture will affect the flow field data
         //Flow field data is stored as attractors(x,y) => r,g; repulsors(x,y) => b,a;
         this.flowFieldTexture.begin();
@@ -86,10 +137,11 @@ class FlowField{
         this.calcFlowFieldShader.setUniform('uRepulsionStrength',this.settings.repulsionStrength);
         rect(-this.flowFieldTexture.width/2,-this.flowFieldTexture.height/2,this.flowFieldTexture.width,this.flowFieldTexture.height);
         this.flowFieldTexture.end();
-
         this.updateFlowMagnitude();
     }
     updateFlowMagnitude(){
+        const newShader = createFlowMagnitudeShader(this.NUMBER_OF_ATTRACTORS,this.NUMBER_OF_REPULSORS);
+        this.calcFlowMagShader = createShader(newShader.vertexShader,newShader.fragmentShader);
         this.flowMagnitudeTexture.begin();
         background(0,0);
         shader(this.calcFlowMagShader);
@@ -165,13 +217,11 @@ class FlowField{
         gl.activeTexture(gl.TEXTURE0);
         gl.bindTexture(gl.TEXTURE_2D, this.particleDataTexture.colorTexture);
         gl.activeTexture(gl.TEXTURE1);
-        // gl.bindTexture(gl.TEXTURE_2D, this.flowFieldTexture.colorTexture);
         gl.bindTexture(gl.TEXTURE_2D, this.flowMagnitudeTexture.colorTexture);
 
         //running the particle-drawing shader
         shader(this.drawParticlesShader);
         this.drawParticlesShader.setUniform('uPositionTexture',this.particleDataTexture);
-        // this.drawParticlesShader.setUniform('uColorTexture',this.flowFieldTexture);
         this.drawParticlesShader.setUniform('uColorTexture',this.flowMagnitudeTexture);
 
         this.drawParticlesShader.setUniform('uRepulsionColor',[this.settings.repulsionColor._array[0],this.settings.repulsionColor._array[1],this.settings.repulsionColor._array[2],1.0]);
@@ -215,10 +265,7 @@ class FlowField{
         if(this.settings.renderHOLCTracts)
             renderTransformedImage(holcTexture);
         this.renderGL();
-        if(this.settings.renderAttractors)
-            this.renderAttractors();
-        if(this.settings.renderRepulsors)
-            this.renderRepulsors();
+        this.renderNodes(this.settings.renderAttractors,this.settings.renderRepulsors);
         if(this.settings.renderFlowFieldDataTexture){
             this.renderData();
         }
@@ -231,7 +278,6 @@ class FlowField{
         if(this.settings.isActive){
             this.updateParticles();
             background(0,0);
-            blendMode(OVERLAY);
             this.render();
         }
     }

@@ -35,10 +35,6 @@ let drawParticlesProgLocs;
 //Presets
 let censusDataPresets;
 
-//20 is a good base number
-let NUMBER_OF_ATTRACTORS = 500;
-let NUMBER_OF_REPULSORS = 500;
-
 //controls whether or not the sim will load with prerendered data/choropleths
 //or with the full dataset, allowing you to explore/experiment
 // let devMode = true;
@@ -74,6 +70,13 @@ const viewPresets = [
         x: 125,
         y: 125,
         scale: 280,
+        settings: defaultSettings
+    },
+    {
+        name: "SF & Alameda County",
+        x: 800,
+        y: 800,
+        scale: 1700,
         settings: defaultSettings
     },
     {

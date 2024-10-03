@@ -128,61 +128,15 @@ class CensusDataFlowField{
         console.log(string);
         return string;
     }
-    normalizeNodesAndPushToFlowField(nodes){
-        //sort nodes by strength
-        nodes.sort((a,b) => {
-                if(a.strength>b.strength)
-                    return 1;
-                else if(a.strength<b.strength)
-                    return -1;
-                else return 0;
-            });
-        let mostNegative = nodes[0].strength;
-        let mostPositive = nodes[nodes.length-1].strength;
-
-        this.flowField.nodes = nodes;
-
-        //clear out old nodes
-        this.flowField.attractorArray = [];
-        this.flowField.repulsorArray = [];
-        NUMBER_OF_ATTRACTORS = 0;
-        NUMBER_OF_REPULSORS = 0;
-
-        //normalize nodes and push into corresponding array
-        //start from the front
-        for(let i = 0; i<nodes.length; i++){
-            let strength = nodes[i].strength;
-            let s = map(strength,mostNegative,mostPositive,0.0,1.0);
-            if(strength >= 0){
-                break;
-            }
-            this.flowField.repulsorArray.push(nodes[i].x);
-            this.flowField.repulsorArray.push(nodes[i].y);
-            this.flowField.repulsorArray.push(s);
-            NUMBER_OF_REPULSORS++;
-        }
-        //then from the back
-        for(let i = nodes.length-1; i>=0; i--){
-            let strength = nodes[i].strength;
-            let s = map(strength,mostNegative,mostPositive,0.0,1.0);
-            if(strength <= 0){
-                break;
-            }
-            this.flowField.attractorArray.push(nodes[i].x);
-            this.flowField.attractorArray.push(nodes[i].y);
-            this.flowField.attractorArray.push(s);
-            NUMBER_OF_ATTRACTORS++;
-        }
-    }
     setFlowFieldNodesFromData(){
         //you need to make sure these don't return any points with infinite strength!
         //This can happen where there are '0' people in a tract and you're dividing by that pop number
         //And it messes up the relative scaling (will crash the calculation bc /0 error can happen)
         let nodes = createNodesFromTracts(this.censusDataPreset.demographicFunction);
-        this.normalizeNodesAndPushToFlowField(nodes);
+        this.flowField.loadNodes(nodes);
     }
     setFlowFieldNodesFromPreset(){
-        this.normalizeNodesAndPushToFlowField(this.censusDataPreset.nodes);
+        this.flowField.loadNodes(this.censusDataPreset.nodes);
     }
     setFlowFieldNodes(){
         if(devMode)
@@ -194,14 +148,10 @@ class CensusDataFlowField{
         this.chartTitle.html(preset.title);
         this.chartEquation.html(preset.chartEquation);
         this.setFlowFieldNodes();
-        this.flowField.updateFlow();
     }
     run(){
         this.updateParametersFromGui();
         this.flowField.run();
-    }
-    saveFFImage(){
-        saveCanvas(this.flowField.flowFieldTexture,"flowField.png","png");
     }
     loadSimulationSettingsIntoGUI(settings){
         this.dampValueSlider.set(settings.particleVelocity);

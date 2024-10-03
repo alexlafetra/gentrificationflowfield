@@ -297,120 +297,144 @@ just some thots:
 void main() {
     //slightly weight it towards repulsors, since they're visually less dominant w/ particles moving away from them
     float val = vColor.x/(1.8*vColor.z);
-    gl_FragColor = mix(uRepulsionColor,uAttractionColor,val);}
+    gl_FragColor = mix(uRepulsionColor,uAttractionColor,val*val);}
 `;
 
-//Creating the flow field from a series of points
-const calculateFlowFieldFrag = glsl`
-precision highp float;
-
-varying vec2 vTexCoord;
-
-uniform vec3 uAttractors[`+NUMBER_OF_ATTRACTORS+glsl`];//array holding all the attractors as [x,y,strength]
-uniform vec3 uRepulsors[`+NUMBER_OF_REPULSORS+glsl`];//array holding all the repulsors as [x,y,strength]
-
-uniform float uAttractionStrength;//attractor strength
-uniform float uRepulsionStrength;//repulsor strength
-
-uniform vec2 uCoordinateOffset;//offset
-uniform float uScale;//scale
-uniform float uDimensions;//dimensions of mainCanvas
-
-void main(){
-    vec2 attraction = vec2(0.0);
-    vec2 repulsion = vec2(0.0);
-    //calculate attractors/repulsors
-    float attractorCount = 0.0;
-    float repulsorCount = 0.0;
-
-    //attractors
-    for(int i = 0; i<`+NUMBER_OF_ATTRACTORS+glsl`; i++){
-        if(uAttractors[i].z != 0.0){
-            vec2 attractorCoord = vec2(uAttractors[i].x*uScale/uDimensions+uCoordinateOffset.x,-uAttractors[i].y*uScale/uDimensions+uCoordinateOffset.y);
-            //add a vector pointing toward the attractor from this pixel
-            //scaled by the inverse square of the distance AND the scale factor
-            float dA = distance(attractorCoord,vTexCoord);
-            attraction += uAttractionStrength * (uAttractors[i].z) * (attractorCoord-vTexCoord) / (dA*dA);
-            attractorCount++;
+function createFlowFieldShader(nAttractors,nRepulsors){
+    return{
+        fragmentShader:
+        glsl`
+        precision highp float;
+        
+        varying vec2 vTexCoord;
+        
+        uniform vec3 uAttractors[`+nAttractors+glsl`];//array holding all the attractors as [x,y,strength]
+        uniform vec3 uRepulsors[`+nRepulsors+glsl`];//array holding all the repulsors as [x,y,strength]
+        
+        uniform float uAttractionStrength;//attractor strength
+        uniform float uRepulsionStrength;//repulsor strength
+        
+        uniform vec2 uCoordinateOffset;//offset
+        uniform float uScale;//scale
+        uniform float uDimensions;//dimensions of mainCanvas
+        
+        void main(){
+            vec2 attraction = vec2(0.0);
+            vec2 repulsion = vec2(0.0);
+            //calculate attractors/repulsors
+            float attractorCount = 0.0;
+            float repulsorCount = 0.0;
+        
+            //attractors
+            for(int i = 0; i<`+nAttractors+glsl`; i++){
+                if(uAttractors[i].z != 0.0){
+                    vec2 attractorCoord = vec2(uAttractors[i].x*uScale/uDimensions+uCoordinateOffset.x,-uAttractors[i].y*uScale/uDimensions+uCoordinateOffset.y);
+                    //add a vector pointing toward the attractor from this pixel
+                    //scaled by the inverse square of the distance AND the scale factor
+                    float dA = distance(attractorCoord,vTexCoord);
+                    attraction += uAttractionStrength * (uAttractors[i].z) * (attractorCoord-vTexCoord) / (dA*dA);
+                    attractorCount++;
+                }
+            }
+            //repulsors
+            for(int i = 0; i<`+nRepulsors+glsl`; i++){
+                if(uRepulsors[i].z != 0.0){
+                    vec2 repulsorCoord = vec2(uRepulsors[i].x*uScale/uDimensions+uCoordinateOffset.x,-uRepulsors[i].y*uScale/uDimensions+uCoordinateOffset.y);
+                    //the repulsion force points AWAY from the repulsor point
+                    float dR = distance(repulsorCoord,vTexCoord);
+                    repulsion += uRepulsionStrength * (uRepulsors[i].z) * (vTexCoord-(repulsorCoord)) / (dR*dR);
+                    repulsorCount++;
+                }
+            }
+            attraction /= attractorCount;
+            repulsion /= repulsorCount;
+            //Storing both attraction and repulsion in the same texture
+            gl_FragColor = vec4(attraction,repulsion);
+            // gl_FragColor = vec4(attraction,repulsion.x,0.5*repulsion.y+1.0);
+            //^^ Prevents alpha channel from clipping -- use this if you want to save the flow field to a texture!
         }
-    }
-    //repulsors
-    for(int i = 0; i<`+NUMBER_OF_REPULSORS+glsl`; i++){
-        if(uRepulsors[i].z != 0.0){
-            vec2 repulsorCoord = vec2(uRepulsors[i].x*uScale/uDimensions+uCoordinateOffset.x,-uRepulsors[i].y*uScale/uDimensions+uCoordinateOffset.y);
-            //the repulsion force points AWAY from the repulsor point
-            float dR = distance(repulsorCoord,vTexCoord);
-            repulsion += uRepulsionStrength * (uRepulsors[i].z) * (vTexCoord-(repulsorCoord)) / (dR*dR);
-            repulsorCount++;
+        `,
+        vertexShader:
+        glsl`
+        precision highp float;
+        
+        attribute vec3 aPosition;
+        attribute vec2 aTexCoord;
+        
+        //Varying variable to pass the texture coordinates into the fragment shader
+        varying vec2 vTexCoord;
+        
+        void main(){
+            // //passing aTexCoord into the frag shader
+            vTexCoord = aTexCoord;
+            //always gotta end by setting gl_Position equal to something;
+            gl_Position = vec4(aPosition*2.0-1.0,1.0);//translate it into screen space coords
         }
-    }
-    attraction /= attractorCount;
-    repulsion /= repulsorCount;
-    //Storing both attraction and repulsion in the same texture
-    gl_FragColor = vec4(attraction,repulsion);
-    // gl_FragColor = vec4(attraction,repulsion.x,0.5*repulsion.y+1.0);
-    //^^ Prevents alpha channel from clipping -- use this if you want to save the flow field to a texture!
+        `
+    };
 }
-`;
 
-const calculateFlowMagFrag = glsl`
-precision highp float;
-
-varying vec2 vTexCoord;
-
-uniform vec3 uAttractors[`+NUMBER_OF_ATTRACTORS+glsl`];//array holding all the attractors as [x,y,strength]
-uniform vec3 uRepulsors[`+NUMBER_OF_REPULSORS+glsl`];//array holding all the repulsors as [x,y,strength]
-
-uniform float uAttractionStrength;//attractor strength
-uniform float uRepulsionStrength;//repulsor strength
-
-uniform vec2 uCoordinateOffset;//offset
-uniform float uScale;//scale
-uniform float uDimensions;//dimensions of mainCanvas
-
-void main(){
-    float attractionMag = 0.0;
-    float repulsionMag = 0.0;
-    //calculate attractors/repulsors
-    float attractorCount = 0.0;
-    float repulsorCount = 0.0;
-    for(int i = 0; i<`+NUMBER_OF_ATTRACTORS+glsl`; i++){
-        vec2 attractorCoord = vec2(uAttractors[i].x*uScale/uDimensions+uCoordinateOffset.x,-uAttractors[i].y*uScale/uDimensions+uCoordinateOffset.y);
-        float dA = distance(attractorCoord,vTexCoord);
-        if(uAttractors[i].z != 0.0){
-            attractionMag += uAttractors[i].z * length(attractorCoord-vTexCoord) / (dA*dA);
-            attractorCount++;
-        }
-
+function createFlowMagnitudeShader(nAttractors,nRepulsors){
+    return{
+        fragmentShader:glsl`
+        //creating the flow magnitude data
+        //basically the same as the flowfield, but you take the length of each vector
+        //before adding them together so they don't all cancel out
+        precision highp float;
+        
+        varying vec2 vTexCoord;
+        
+        uniform vec3 uAttractors[`+nAttractors+glsl`];//array holding all the attractors as [x,y,strength]
+        uniform vec3 uRepulsors[`+nRepulsors+glsl`];//array holding all the repulsors as [x,y,strength]
+        
+        uniform float uAttractionStrength;//attractor strength
+        uniform float uRepulsionStrength;//repulsor strength
+        
+        uniform vec2 uCoordinateOffset;//offset
+        uniform float uScale;//scale
+        uniform float uDimensions;//dimensions of mainCanvas
+        
+        void main(){
+            float attractionMag = 0.0;
+            float repulsionMag = 0.0;
+            //calculate attractors/repulsors
+            float attractorCount = 0.0;
+            float repulsorCount = 0.0;
+            for(int i = 0; i<`+nAttractors+glsl`; i++){
+                vec2 attractorCoord = vec2(uAttractors[i].x*uScale/uDimensions+uCoordinateOffset.x,-uAttractors[i].y*uScale/uDimensions+uCoordinateOffset.y);
+                float dA = distance(attractorCoord,vTexCoord);
+                if(uAttractors[i].z != 0.0){
+                    attractionMag += uAttractors[i].z * length(attractorCoord-vTexCoord) / (dA*dA);
+                    attractorCount++;
+                }
+        
+            }
+            for(int i = 0; i<`+nRepulsors+glsl`; i++){
+                vec2 repulsorCoord = vec2(uRepulsors[i].x*uScale/uDimensions+uCoordinateOffset.x,-uRepulsors[i].y*uScale/uDimensions+uCoordinateOffset.y);
+                float dR = distance(repulsorCoord,vTexCoord);
+                if(uRepulsors[i].z != 0.0){
+                    repulsionMag += uRepulsors[i].z * length(vTexCoord-repulsorCoord) / (dR*dR);
+                    repulsorCount++;
+                }
+            }
+            attractionMag /= attractorCount;
+            repulsionMag /= repulsorCount;
+            gl_FragColor = vec4(uAttractionStrength*attractionMag/10.0,0.0,uRepulsionStrength*repulsionMag/10.0,1.0);
+        }`,
+        vertexShader:glsl`
+        precision highp float;
+        
+        attribute vec3 aPosition;
+        attribute vec2 aTexCoord;
+        
+        //Varying variable to pass the texture coordinates into the fragment shader
+        varying vec2 vTexCoord;
+        
+        void main(){
+            // //passing aTexCoord into the frag shader
+            vTexCoord = aTexCoord;
+            //always gotta end by setting gl_Position equal to something;
+            gl_Position = vec4(aPosition*2.0-1.0,1.0);//translate it into screen space coords
+        }`
     }
-    for(int i = 0; i<`+NUMBER_OF_REPULSORS+glsl`; i++){
-        vec2 repulsorCoord = vec2(uRepulsors[i].x*uScale/uDimensions+uCoordinateOffset.x,-uRepulsors[i].y*uScale/uDimensions+uCoordinateOffset.y);
-        float dR = distance(repulsorCoord,vTexCoord);
-        if(uRepulsors[i].z != 0.0){
-            repulsionMag += uRepulsors[i].z * length(vTexCoord-repulsorCoord) / (dR*dR);
-            repulsorCount++;
-        }
-    }
-    attractionMag /= attractorCount;
-    repulsionMag /= repulsorCount;
-    gl_FragColor = vec4(uAttractionStrength*attractionMag/10.0,0.0,uRepulsionStrength*repulsionMag/10.0,1.0);
-    // gl_FragColor = vec4(uAttractionStrength*uAttractionStrength*attractionMag/10.0,0.0,uRepulsionStrength*uRepulsionStrength*repulsionMag/10.0,1.0);
 }
-`;
-
-const calculateFlowFieldVert = glsl`
-precision highp float;
-
-attribute vec3 aPosition;
-attribute vec2 aTexCoord;
-
-//Varying variable to pass the texture coordinates into the fragment shader
-varying vec2 vTexCoord;
-
-void main(){
-    // //passing aTexCoord into the frag shader
-    vTexCoord = aTexCoord;
-    //always gotta end by setting gl_Position equal to something;
-    gl_Position = vec4(aPosition*2.0-1.0,1.0);//translate it into screen space coords
-}
-`;
