@@ -143,17 +143,16 @@ class DemographicVis{
         ff.chartTitle.html(this.title);
         ff.chartEquation.html(this.chartEquation);
         ff.presetIndex = index;
-        ff.calculateAttractors(NUMBER_OF_ATTRACTORS,this.demographicFunction);
+        ff.calculateNodes(NUMBER_OF_ATTRACTORS,this.demographicFunction);
         ff.updateFlow();
     }
 }
 
 class Preset{
-    constructor(title,chartEquation,aPoints,rPoints){
+    constructor(title,chartEquation,nodes){
         this.title = title;
         this.chartEquation = chartEquation;
-        this.attractors = aPoints;
-        this.repulsors = rPoints;
+        this.nodes = nodes;
     }
 }
 
@@ -201,25 +200,25 @@ function createPresets(){
 }
 function createPremadePresets(){
   //Preset color/flows
-  whiteProportionComparisonPreset = new Preset("Change In Proportion of White Population", "P<sub>White 2000</sub> / P<sub>Total 2000</sub> - P<sub>White 2020</sub> / P<sub>Total 2020</sub>",preset0Attractors,preset0Repulsors);
-  blackProportionComparisonPreset = new Preset("Change In Proportion of Black Population","P<sub>Black 2000</sub> / P<sub>Total 2000</sub> - P<sub>Black 2020</sub> / P<sub>Total 2020</sub>",preset1Attractors,preset1Repulsors);
-  asianProportionComparisonPreset = new Preset("Change In Proportion of Asian Population","P<sub>Asian 2000</sub> / P<sub>Total 2000</sub> - P<sub>Asian 2020</sub> / P<sub>Total 2020</sub>",preset2Attractors,preset2Repulsors);
-  hispOrLatinoProportionComparisonPreset = new Preset("Change In Proportion of Hispanic or Latino Population","P<sub>Hisp. or Latino 2000</sub> / P<sub>Total 2000</sub> - P<sub>Hisp. or Latino 2020</sub> / P<sub>Total 2020</sub>",preset3Attractors,preset3Repulsors);
+  whiteProportionComparisonPreset = new Preset("Change In Proportion of White Population", "P<sub>White 2000</sub> / P<sub>Total 2000</sub> - P<sub>White 2020</sub> / P<sub>Total 2020</sub>",preset0Nodes);
+  blackProportionComparisonPreset = new Preset("Change In Proportion of Black Population","P<sub>Black 2000</sub> / P<sub>Total 2000</sub> - P<sub>Black 2020</sub> / P<sub>Total 2020</sub>",preset1Nodes);
+  asianProportionComparisonPreset = new Preset("Change In Proportion of Asian Population","P<sub>Asian 2000</sub> / P<sub>Total 2000</sub> - P<sub>Asian 2020</sub> / P<sub>Total 2020</sub>",preset2Nodes);
+  hispOrLatinoProportionComparisonPreset = new Preset("Change In Proportion of Hispanic or Latino Population","P<sub>Hisp. or Latino 2000</sub> / P<sub>Total 2000</sub> - P<sub>Hisp. or Latino 2020</sub> / P<sub>Total 2020</sub>",preset3Nodes);
 
-  whiteComparisonPreset = new Preset("Change in White Population","P<sub>White 2020</sub> - P<sub>White 2000</sub>",preset4Attractors,preset4Repulsors);
-  blackComparisonPreset = new Preset("Change in Black Population","P<sub>Black 2020</sub> - P<sub>Black 2000</sub>",preset5Attractors,preset5Repulsors);
-  asianComparisonPreset = new Preset("Change in Asian Population","P<sub>Asian 2020</sub> - P<sub>Asian 2000</sub>",preset6Attractors,preset6Repulsors);
-  hispOrLatinoComparisonPreset = new Preset("Change in Hispanic or Latino Population","P<sub>Hisp. or Latino 2020</sub> - P<sub>Hisp. or Latino 2000</sub>",preset7Attractors,preset7Repulsors);
+  whiteComparisonPreset = new Preset("Change in White Population","P<sub>White 2020</sub> - P<sub>White 2000</sub>",preset4Nodes);
+  blackComparisonPreset = new Preset("Change in Black Population","P<sub>Black 2020</sub> - P<sub>Black 2000</sub>",preset5Nodes);
+  asianComparisonPreset = new Preset("Change in Asian Population","P<sub>Asian 2020</sub> - P<sub>Asian 2000</sub>",preset6Nodes);
+  hispOrLatinoComparisonPreset = new Preset("Change in Hispanic or Latino Population","P<sub>Hisp. or Latino 2020</sub> - P<sub>Hisp. or Latino 2000</sub>",preset7Nodes);
 
-  rentBurden1 = new Preset("Change in Renters spending less than 10% of monthly income","",preset8Attractors,preset8Repulsors);
-  rentBurden2 = new Preset("Change in Renters spending 10-14% of monthly income","",preset9Attractors,preset9Repulsors);
-  rentBurden3 = new Preset("Change in Renters spending 15-19% of monthly income","",preset10Attractors,preset10Repulsors);
-  rentBurden4 = new Preset("Change in Renters spending 20-24% of monthly income","",preset11Attractors,preset11Repulsors);
-  rentBurden5 = new Preset("Change in Renters spending 25-29% of monthly income","",preset12Attractors,preset12Repulsors);
-  rentBurden6 = new Preset("Change in Renters spending 30-34% of monthly income","",preset13Attractors,preset13Repulsors);
-  rentBurden7 = new Preset("Change in Renters spending 35-39% of monthly income","",preset14Attractors,preset14Repulsors);
-  rentBurden8 = new Preset("Change in Renters spending 40-49% of monthly income","",preset15Attractors,preset15Repulsors);
-  rentBurden9 = new Preset("Change in Renters spending more than 50% of monthly income","",preset16Attractors,preset16Repulsors);
+  rentBurden1 = new Preset("Change in Renters spending less than 10% of monthly income","",preset8Nodes);
+  rentBurden2 = new Preset("Change in Renters spending 10-14% of monthly income","",preset9Nodes);
+  rentBurden3 = new Preset("Change in Renters spending 15-19% of monthly income","",preset10Nodes);
+  rentBurden4 = new Preset("Change in Renters spending 20-24% of monthly income","",preset11Nodes);
+  rentBurden5 = new Preset("Change in Renters spending 25-29% of monthly income","",preset12Nodes);
+  rentBurden6 = new Preset("Change in Renters spending 30-34% of monthly income","",preset13Nodes);
+  rentBurden7 = new Preset("Change in Renters spending 35-39% of monthly income","",preset14Nodes);
+  rentBurden8 = new Preset("Change in Renters spending 40-49% of monthly income","",preset15Nodes);
+  rentBurden9 = new Preset("Change in Renters spending more than 50% of monthly income","",preset16Nodes);
 
   censusDataPresets = [
       whiteProportionComparisonPreset,
@@ -242,85 +241,27 @@ function createPremadePresets(){
   ];
 }
 
-function getTopNTracts(n,func){
-    let vals = bayTracts.toSorted((a,b) => {
-        if(!a.hasData || a.raceData2020 == undefined || a.raceData2000 == undefined || a.rentData2000 == undefined || a.rentData2020 == undefined){
-            return 0;
+//parses tracts into nodes
+function createNodesFromTracts(fn){
+    let nodes = [];
+    for(tract of bayTracts){
+        //skip tracts w/ missing data
+        if(!tract.hasData || tract.raceData2020 == undefined || tract.raceData2000 == undefined || tract.rentData2000 == undefined || tract.rentData2020 == undefined){
+            continue;
         }
-        else if(!b.hasData || b.raceData2020 == undefined || b.raceData2000 == undefined || b.rentData2000 == undefined || b.rentData2020 == undefined){
-            return 0;
+        let node = {
+            x:((tract.centroid.x+geoOffset.x)),
+            y:((tract.centroid.y+geoOffset.y)),
+            strength:fn(tract),
+            tractName:tract.properties.NAMELSAD
         }
-        let A = func(a);
-        let B = func(b);
-
-        if(A>B)
-            return -1;
-        else if(B>A)
-            return 1;
+        //skip glitched/empty nodes
+        if(node.strength == Infinity ||  node.strength == 0 && node.strength == undefined)
+            continue;
         else
-            return 0;
-    });
-    return vals.slice(0,n);
-}
-
-function getBottomNTracts(n,func){
-    let vals = bayTracts.toSorted((a,b) => {
-    if(!a.hasData || a.raceData2020 == undefined || a.raceData2000 == undefined){
-            return 0;
-        }
-        else if(!b.hasData || b.raceData2020 == undefined || b.raceData2000 == undefined){
-            return 0;
-        }
-
-        let A = func(a);
-        let B = func(b);
-
-        if(A>B)
-            return -1;
-        else if(B>A)
-            return 1;
-        else
-            return 0;
-    });
-    //be careful to skip the tracts that don't have data, which will be at the bottom
-    for(let i = vals.length-1; i>=0; i--){
-        if(vals[i].hasData){
-            return vals.slice((i-n),i);
-        }
+            nodes.push(node);
     }
-}
-
-function getSignificantPoints(n,func){
-    let tracts = getTopNTracts(n,func);
-    let points = [];
-    for(let i = 0; i<min(n,tracts.length); i++){
-        let point = {
-            // x:((tracts[i].centroid.x+geoOffset.x)*scale.x)/width+0.5,
-            // y:((tracts[i].centroid.y+geoOffset.y)*scale.y)/height+0.5,
-            x:((tracts[i].centroid.x+geoOffset.x)),
-            y:((tracts[i].centroid.y+geoOffset.y)),
-            strength:func(tracts[i]),
-            tractName:tracts[i].properties.NAMELSAD
-        }
-        points.push(point);
-    }
-    return points;
-}
-
-function getLeastSignificantPoints(n,func){
-    let tracts = getBottomNTracts(n,func);
-    let points = [];
-    for(let i = 0; i<n; i++){
-        let point = {
-            // x:((tracts[i].centroid.x+geoOffset.x)*scale.x)/width+0.5,
-            // y:((tracts[i].centroid.y+geoOffset.y)*scale.y)/height+0.5,
-            x:((tracts[i].centroid.x+geoOffset.x)),
-            y:((tracts[i].centroid.y+geoOffset.y)),
-            strength:func(tracts[i])
-        }
-        points.push(point);
-    }
-    return points;
+    return nodes;
 }
 
 function getTotalStats(){

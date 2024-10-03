@@ -48,35 +48,31 @@ class FlowField{
     updateSettings(settings){
         this.settings = settings;
     }
-    renderNodes(array,nodeColor){
-        for(let i = 0; i<array.length-3; i+=3){
-            const x = (array[i])*scale.x+offset.x;
-            const y = -(array[i+1]*scale.x)+offset.y;
-            const force = array[i+2];
-            //if force is 0, skip it
-            if(force == 0)
+    renderNodes(){
+        let trueMin = this.nodes[0].strength;
+        let trueMax = this.nodes[this.nodes.length-1].strength;
+        for(let node of this.nodes){
+            const x = node.x*scale.x+offset.x;
+            const y = -node.y*scale.x+offset.y;
+            const force = map(node.strength,trueMin+0.3,trueMax-0.3,0,5);
+            if(force<2)
                 continue;
-            let size = 10*force*force;
-            fill(nodeColor);
+            let temp = map(node.strength,trueMin+0.3,trueMax-0.3,0,1);
+            fill(lerpColor(this.settings.repulsionColor,this.settings.attractionColor,temp));
             noStroke();
-            ellipse(x,y,size,size);
+            ellipse(x,y,force,force);
         }
     }
     renderAttractors(){
-        this.renderNodes(this.attractorArray,this.settings.attractionColor);
+        this.renderNodes("ATTRACTORS",100);
     }
     renderRepulsors(){
-        this.renderNodes(this.repulsorArray,this.settings.repulsionColor);
+        this.renderNodes("REPULSORS",100);
     }
     updateFlow(){
-        // this.flowFieldTexture.remove();
-        // this.flowFieldTexture = null;
-        // this.flowFieldTexture = createFramebuffer({width:this.settings.canvasSize,height:this.settings.canvasSize,format:FLOAT,textureFiltering:NEAREST,depth:false});//holds the flowfield data attraction = (r,g) ; repulsion = (b,a)
-
         //ANY drawing to this texture will affect the flow field data
         //Flow field data is stored as attractors(x,y) => r,g; repulsors(x,y) => b,a;
         this.flowFieldTexture.begin();
-        background(0,0);
         shader(this.calcFlowFieldShader);
         clear();
         //just a note: attractors and repulsors are FLAT arrays of x,y,strength values
@@ -153,6 +149,7 @@ class FlowField{
     renderGL(){
         //using webGL to draw each particle as a point
         this.particleCanvas.begin();
+
         //setting ID attributes (or trying to at least)
         gl.bindBuffer(gl.ARRAY_BUFFER, idBuffer);
         gl.enableVertexAttribArray(drawParticlesProgLocs.id);
@@ -203,13 +200,18 @@ class FlowField{
         image(this.particleDataTexture,-width/2,-height/2,width/3,height/3);
         fill(0);
         noStroke();
-        rect(-width/2,-height/2+height/3,width/3,2*height/3);
+        rect(-width/2,-height/2+height/3,width/3,height/3);
         image(this.flowFieldTexture,-width/2,-height/2+height/3,width/3,height/3);
+        fill(255);
+        rect(-width/2,-height/2+2*height/3,width/3,height/3);
+
         image(this.flowMagnitudeTexture,-width/2,-height/2+2*height/3,width/3,height/3);
     }
     render(){
-        if(this.settings.renderCensusTracts)
+        if(this.settings.renderCensusTracts){
+            // renderTransformedImage(presetFlowMask);
             renderTransformedImage(tractOutlines);
+        }
         if(this.settings.renderHOLCTracts)
             renderTransformedImage(holcTexture);
         this.renderGL();
@@ -218,7 +220,6 @@ class FlowField{
         if(this.settings.renderRepulsors)
             this.renderRepulsors();
         if(this.settings.renderFlowFieldDataTexture){
-            // image(this.flowFieldTexture,-height/2,-height/2,width,height);
             this.renderData();
         }
     }
@@ -230,6 +231,7 @@ class FlowField{
         if(this.settings.isActive){
             this.updateParticles();
             background(0,0);
+            blendMode(OVERLAY);
             this.render();
         }
     }

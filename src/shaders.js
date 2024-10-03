@@ -282,25 +282,21 @@ float map(float value, float min1, float max1, float min2, float max2) {
 /*
 
 just some thots:
-colors look weird bc when a particle is evenly pulled on by attractors, exor repulsors,
-the magnitude of the respective force is very small. This means that even tho a particle
-might be much closer to and more 'influenced' by a group of attractors, because it's 
-being evenly pulled around by them even ONE external rep/attractor can outweigh the big group of
-nodes nearby. Not sure how to best deal with this! The good news is that it looks pretty good as-is.
+// colors look weird bc when a particle is evenly pulled on by attractors, exor repulsors,
+// the magnitude of the respective force is very small. This means that even tho a particle
+// might be much closer to and more 'influenced' by a group of attractors, because it's 
+// being evenly pulled around by them even ONE external rep/attractor can outweigh the big group of
+// nodes nearby. Not sure how to best deal with this! The good news is that it looks pretty good as-is.
 
-I think ideally you would recalculate the influence of attractors and repulsors by just adding up the magnitude of nodes/d^2,
-and not letting opposing forces cancel out, but that's kind of expensive for just an aesthetic difference.
-You could also write that data to another texture, but again, kind of expensive.
+// I think ideally you would recalculate the influence of attractors and repulsors by just adding up the magnitude of nodes/d^2,
+// and not letting opposing forces cancel out, but that's kind of expensive for just an aesthetic difference.
+// You could also write that data to another texture, but again, kind of expensive.
+
+^^ this is what it does now! Writes the flow magnitude to a texture, which is passed into this shader to color each particle.
 */
 void main() {
-    // float valA = abs(length(vec2(vColor.x,vColor.y)));//magnitude of attraction force
-    // float valR = abs(length(vec2(vColor.z,vColor.w)));//magnitude of repulsion force
-    // float val = valA - valR;
-    // val = map(val,-1.0,0.5,0.0,1.0);
-    // val = map(val,-1.0,1.0,0.0,1.0);
-
     //slightly weight it towards repulsors, since they're visually less dominant w/ particles moving away from them
-    float val = vColor.x/(1.5*vColor.z);
+    float val = vColor.x/(1.8*vColor.z);
     gl_FragColor = mix(uRepulsionColor,uAttractionColor,val);}
 `;
 
@@ -311,7 +307,7 @@ precision highp float;
 varying vec2 vTexCoord;
 
 uniform vec3 uAttractors[`+NUMBER_OF_ATTRACTORS+glsl`];//array holding all the attractors as [x,y,strength]
-uniform vec3 uRepulsors[`+NUMBER_OF_ATTRACTORS+glsl`];//array holding all the repulsors as [x,y,strength]
+uniform vec3 uRepulsors[`+NUMBER_OF_REPULSORS+glsl`];//array holding all the repulsors as [x,y,strength]
 
 uniform float uAttractionStrength;//attractor strength
 uniform float uRepulsionStrength;//repulsor strength
@@ -326,19 +322,24 @@ void main(){
     //calculate attractors/repulsors
     float attractorCount = 0.0;
     float repulsorCount = 0.0;
+
+    //attractors
     for(int i = 0; i<`+NUMBER_OF_ATTRACTORS+glsl`; i++){
-        vec2 attractorCoord = vec2(uAttractors[i].x*uScale/uDimensions+uCoordinateOffset.x,-uAttractors[i].y*uScale/uDimensions+uCoordinateOffset.y);
-        vec2 repulsorCoord = vec2(uRepulsors[i].x*uScale/uDimensions+uCoordinateOffset.x,-uRepulsors[i].y*uScale/uDimensions+uCoordinateOffset.y);
-        //add a vector pointing toward the attractor from this pixel
-        //scaled by the inverse square of the distance AND the scale factor
-        float dA = distance(attractorCoord,vTexCoord);
         if(uAttractors[i].z != 0.0){
+            vec2 attractorCoord = vec2(uAttractors[i].x*uScale/uDimensions+uCoordinateOffset.x,-uAttractors[i].y*uScale/uDimensions+uCoordinateOffset.y);
+            //add a vector pointing toward the attractor from this pixel
+            //scaled by the inverse square of the distance AND the scale factor
+            float dA = distance(attractorCoord,vTexCoord);
             attraction += uAttractionStrength * (uAttractors[i].z) * (attractorCoord-vTexCoord) / (dA*dA);
             attractorCount++;
         }
-        //the repulsion force points AWAY from the repulsor point
-        float dR = distance(repulsorCoord,vTexCoord);
+    }
+    //repulsors
+    for(int i = 0; i<`+NUMBER_OF_REPULSORS+glsl`; i++){
         if(uRepulsors[i].z != 0.0){
+            vec2 repulsorCoord = vec2(uRepulsors[i].x*uScale/uDimensions+uCoordinateOffset.x,-uRepulsors[i].y*uScale/uDimensions+uCoordinateOffset.y);
+            //the repulsion force points AWAY from the repulsor point
+            float dR = distance(repulsorCoord,vTexCoord);
             repulsion += uRepulsionStrength * (uRepulsors[i].z) * (vTexCoord-(repulsorCoord)) / (dR*dR);
             repulsorCount++;
         }
@@ -358,7 +359,7 @@ precision highp float;
 varying vec2 vTexCoord;
 
 uniform vec3 uAttractors[`+NUMBER_OF_ATTRACTORS+glsl`];//array holding all the attractors as [x,y,strength]
-uniform vec3 uRepulsors[`+NUMBER_OF_ATTRACTORS+glsl`];//array holding all the repulsors as [x,y,strength]
+uniform vec3 uRepulsors[`+NUMBER_OF_REPULSORS+glsl`];//array holding all the repulsors as [x,y,strength]
 
 uniform float uAttractionStrength;//attractor strength
 uniform float uRepulsionStrength;//repulsor strength
@@ -375,14 +376,15 @@ void main(){
     float repulsorCount = 0.0;
     for(int i = 0; i<`+NUMBER_OF_ATTRACTORS+glsl`; i++){
         vec2 attractorCoord = vec2(uAttractors[i].x*uScale/uDimensions+uCoordinateOffset.x,-uAttractors[i].y*uScale/uDimensions+uCoordinateOffset.y);
-        vec2 repulsorCoord = vec2(uRepulsors[i].x*uScale/uDimensions+uCoordinateOffset.x,-uRepulsors[i].y*uScale/uDimensions+uCoordinateOffset.y);
-
         float dA = distance(attractorCoord,vTexCoord);
         if(uAttractors[i].z != 0.0){
             attractionMag += uAttractors[i].z * length(attractorCoord-vTexCoord) / (dA*dA);
             attractorCount++;
         }
 
+    }
+    for(int i = 0; i<`+NUMBER_OF_REPULSORS+glsl`; i++){
+        vec2 repulsorCoord = vec2(uRepulsors[i].x*uScale/uDimensions+uCoordinateOffset.x,-uRepulsors[i].y*uScale/uDimensions+uCoordinateOffset.y);
         float dR = distance(repulsorCoord,vTexCoord);
         if(uRepulsors[i].z != 0.0){
             repulsionMag += uRepulsors[i].z * length(vTexCoord-repulsorCoord) / (dR*dR);
@@ -392,6 +394,7 @@ void main(){
     attractionMag /= attractorCount;
     repulsionMag /= repulsorCount;
     gl_FragColor = vec4(uAttractionStrength*attractionMag/10.0,0.0,uRepulsionStrength*repulsionMag/10.0,1.0);
+    // gl_FragColor = vec4(uAttractionStrength*uAttractionStrength*attractionMag/10.0,0.0,uRepulsionStrength*uRepulsionStrength*repulsionMag/10.0,1.0);
 }
 `;
 
