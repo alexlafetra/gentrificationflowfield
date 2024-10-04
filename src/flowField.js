@@ -72,7 +72,6 @@ class FlowField{
         this.nodeTexture.end();
     }
     loadNodes(nodes){
-        console.log(nodes);
         //sort nodes by strength
         nodes.sort((a,b) => {
             if(a.strength>b.strength)
@@ -130,8 +129,8 @@ class FlowField{
         //ANY drawing to this texture will affect the flow field data
         //Flow field data is stored as attractors(x,y) => r,g; repulsors(x,y) => b,a;
         this.flowFieldTexture.begin();
-        shader(this.calcFlowFieldShader);
         clear();
+        shader(this.calcFlowFieldShader);
         //just a note: attractors and repulsors are FLAT arrays of x,y,strength values
         //Which means they're just a 1x(nx3) flat vector, not an nx3 multidimensional vector
         this.calcFlowFieldShader.setUniform('uCoordinateOffset',[offset.x/mainCanvas.width+0.5,offset.y/mainCanvas.height+0.5]);//adjusting coordinate so they're between 0,1 (instead of -width/2,+width/2)
@@ -254,12 +253,14 @@ class FlowField{
     }
     renderData(){
         const dataSize = 100;
-        image(this.particleDataTexture,-width/2,-height/2,dataSize,dataSize);
+        const yStart = height/2-dataSize*4
+        image(this.particleCanvas,-width/2,yStart,dataSize,dataSize);
         fill(0);
         noStroke();
-        rect(-width/2,-height/2+dataSize,dataSize,dataSize);
-        image(this.flowFieldTexture,-width/2,-height/2+dataSize,dataSize,dataSize);
-        image(this.flowMagnitudeTexture,-width/2,-height/2+2*dataSize,dataSize,dataSize);
+        rect(-width/2,yStart+dataSize,dataSize,3*dataSize);
+        image(this.flowFieldTexture,-width/2,yStart+dataSize,dataSize,dataSize);
+        image(this.flowMagnitudeTexture,-width/2,yStart+2*dataSize,dataSize,dataSize);
+        image(this.particleDataTexture,-width/2,yStart+3*dataSize,dataSize,dataSize);
     }
     render(){
         if(this.settings.renderCensusTracts)

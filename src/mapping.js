@@ -66,13 +66,10 @@ function filterNonBayAreaCounties(data){
 }
 
 //Adds rows for tract and county codes
-function getTractAndCountyCodes(data){
+function setTractAndCountyCodes(data){
     //adding 6-digit tract id's for 2000
     data.addColumn('Tract');
-    // const TRACT_COLUMN_ID = data.getColumnCount()-1;
     data.addColumn('County');
-    // const COUNTY_COLUMN_ID = data.getColumnCount()-1;
-
     let rows = data.getRows();
     // console.log(rows);
     for(let row of rows){
@@ -136,10 +133,6 @@ function isItInTheBayTho(countyCode){
     return false;
 }
 
-function checkForTract(data,tractID){
-    let row = data.findRow(tractID,'Tract');
-    return row;
-}
 
 function alignGeoAndData(features,datasets){
     bayTracts = [];
@@ -157,10 +150,11 @@ function alignGeoAndData(features,datasets){
         let rows = [];
         // use that id to lookup the demographic data
         for(let data of datasets){
-            let row = checkForTract(data,tractID);
+            let row = data.findRow(tractID,'Tract');
             if(!row){
                 hasAllTheData = false;
                 missingTracts.push(tractID);
+                break;
             }
             else{
                 rows.push(row);

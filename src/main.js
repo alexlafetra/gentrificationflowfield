@@ -47,8 +47,8 @@ const defaultSettings = {
     particleVelocity : 0.004,
     flowInfluence : 1.0,
     randomMagnitude : 0.0,
-    repulsionStrength : 1,
-    attractionStrength : 1,
+    repulsionStrength : 0.4,
+    attractionStrength : 0.4,
     canvasSize : 800,
     useParticleMask : true, //for preventing particles from entering oceans
     isActive : true,
@@ -219,6 +219,25 @@ function fillFBOwithRandom(fbo,scale,seed){
     fbo.end();
 }
 
+//All this freakin mess because you can't write a floating pt texture to png right now
+function saveFlowFieldTexture(){
+    const flowFieldTexture = createFramebuffer({width:2000,height:2000,textureFiltering:NEAREST});
+    const newShader = createFlowMagnitudeShader(flowField.flowField.NUMBER_OF_ATTRACTORS,flowField.flowField.NUMBER_OF_REPULSORS);
+    let calcFlowFieldShader = createShader(newShader.vertexShader,newShader.fragmentShader);
+    flowFieldTexture.begin();
+    clear();
+    shader(calcFlowFieldShader);
+    calcFlowFieldShader.setUniform('uCoordinateOffset',[offset.x/mainCanvas.width+0.5,offset.y/mainCanvas.height+0.5]);//adjusting coordinate so they're between 0,1 (instead of -width/2,+width/2)
+    calcFlowFieldShader.setUniform('uScale',scale.x);
+    calcFlowFieldShader.setUniform('uDimensions',mainCanvas.width);
+    calcFlowFieldShader.setUniform('uAttractors',flowField.flowField.attractorArray);
+    calcFlowFieldShader.setUniform('uRepulsors',flowField.flowField.repulsorArray);
+    calcFlowFieldShader.setUniform('uAttractionStrength',flowField.flowField.settings.attractionStrength);
+    calcFlowFieldShader.setUniform('uRepulsionStrength',flowField.flowField.settings.repulsionStrength);
+    rect(-flowFieldTexture.width/2,-flowFieldTexture.height/2,flowFieldTexture.width,flowFieldTexture.height);
+    flowFieldTexture.end();
+    saveCanvas(flowFieldTexture,"flowFieldTexture.png","png");
+}
 function saveFlowFieldGif(){
     saveGif(flowField.censusDataPreset.title+".gif", Number(flowField.gifLengthTextbox.value()),{units:'frames',delay:10})
 }

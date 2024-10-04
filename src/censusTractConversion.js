@@ -22,12 +22,12 @@ function loadCensusCSVData(){
 
 function cleanCensusData(){
     //parsing tract/county codes into 'Tract' and 'County' columns respectively
-    getTractAndCountyCodes(raceData2000);
-    getTractAndCountyCodes(raceData2020);
-    getTractAndCountyCodes(rentBurdenData2000);
-    getTractAndCountyCodes(rentBurdenData2020);
-    getTractAndCountyCodes(medianRentData2000);
-    getTractAndCountyCodes(medianRentData2020);
+    setTractAndCountyCodes(raceData2000);
+    setTractAndCountyCodes(raceData2020);
+    setTractAndCountyCodes(rentBurdenData2000);
+    setTractAndCountyCodes(rentBurdenData2020);
+    setTractAndCountyCodes(medianRentData2000);
+    setTractAndCountyCodes(medianRentData2020);
 
     //filtering data so it's faster to process
     raceData2000 = filterNonBayAreaCounties(raceData2000);

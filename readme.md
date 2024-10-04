@@ -1,7 +1,7 @@
 <!-- ![](readme/render_animated.gif) -->
 ![](readme/demo_lowres_120_loop.gif)
 
-# Housing Data Visualization
+# Visualizing Gentrification
 <!-- *Exploring changes in Bay Area demographics using a flow field* -->
 *Visualizing the intensity of gentrification in the Bay Area using flow fields and particle simulations*
 
