@@ -1,42 +1,51 @@
 function loadCensusCSVData(){
-    tractGeometry = loadJSON("data/geographic/CA_Tracts.geojson");
-    oakHolcTracts = loadJSON("data/geographic/oakland_HOLC.json");
-    sfHolcTracts = loadJSON("data/geographic/SF_HOLC.json");
-    sjHolcTracts = loadJSON("data/geographic/SJ_HOLC.json");
+    tractGeometry = loadJSON("data/geography/CA_Tracts.geojson");
+    oakHolcTracts = loadJSON("data/geography/oakland_HOLC.json");
+    sfHolcTracts = loadJSON("data/geography/SF_HOLC.json");
+    sjHolcTracts = loadJSON("data/geography/SJ_HOLC.json");
 
-    // raceData2000 = loadTable('data/Census/CONVERTED_Tracts_by_Race_2000.csv','csv','header');
-    raceData2000 = loadTable('data/Census/Tracts_by_Race_2000.csv','csv','header');
-    raceData2020 = loadTable('data/Census/Tracts_by_Race_2020.csv','csv','header');
+    raceData2000 = loadTable('data/census/Tracts_by_Race_2000.csv','csv','header');
+    raceData2020 = loadTable('data/census/Tracts_by_Race_2020.csv','csv','header');
 
-    // rentData2000 = loadTable('data/Census/CONVERTED_Tracts_by_Rent_2000.csv','csv','header');
-    rentData2000 = loadTable('data/Census/Tracts_by_Rent_2000.csv','csv','header');
-    rentData2020 = loadTable('data/Census/Tracts_by_Rent_2020.csv','csv','header');
+    rentBurdenData2000 = loadTable('data/census/Tracts_by_Rent_2000.csv','csv','header');
+    rentBurdenData2020 = loadTable('data/census/Tracts_by_Rent_2020.csv','csv','header');
+
+    medianRentData2000 = loadTable('data/census/Median_Rent_2000.csv','csv','header');
+    medianRentData2020 = loadTable('data/census/Median_Rent_2020.csv','csv','header');
 
     //These vv turned out to be unhelpful! They're not complete, idk what counts as "substantially changed" but it's not enough
-    // substantiallyChanged2000 = loadTable('data/Census/Substantially_Changed_2000.csv');
-    // substantiallyChanged2010 = loadTable('data/Census/Substantially_Changed_2010.csv');
-    conversions2000to2010 = loadTable('data/Census/2010_to_2000.csv','csv','header');
-    conversions2010to2020 = loadTable('data/Census/2020_to_2010.csv','csv','header');
+    // substantiallyChanged2000 = loadTable('data/census/Substantially_Changed_2000.csv');
+    // substantiallyChanged2010 = loadTable('data/census/Substantially_Changed_2010.csv');
+    conversions2000to2010 = loadTable('data/census/2010_to_2000.csv','csv','header');
+    conversions2010to2020 = loadTable('data/census/2020_to_2010.csv','csv','header');
 }
 
 function cleanCensusData(){
     //parsing tract/county codes into 'Tract' and 'County' columns respectively
     getTractAndCountyCodes(raceData2000);
     getTractAndCountyCodes(raceData2020);
-    getTractAndCountyCodes(rentData2000);
-    getTractAndCountyCodes(rentData2020);
+    getTractAndCountyCodes(rentBurdenData2000);
+    getTractAndCountyCodes(rentBurdenData2020);
+    getTractAndCountyCodes(medianRentData2000);
+    getTractAndCountyCodes(medianRentData2020);
 
     //filtering data so it's faster to process
     raceData2000 = filterNonBayAreaCounties(raceData2000);
     raceData2020 = filterNonBayAreaCounties(raceData2020);
-    rentData2000 = filterNonBayAreaCounties(rentData2000);
-    rentData2020 = filterNonBayAreaCounties(rentData2020);
+    rentBurdenData2000 = filterNonBayAreaCounties(rentBurdenData2000);
+    rentBurdenData2020 = filterNonBayAreaCounties(rentBurdenData2020);
+    medianRentData2000 = filterNonBayAreaCounties(medianRentData2000);
+    medianRentData2020 = filterNonBayAreaCounties(medianRentData2020);
 
     //Converting 2000's data into 2020 data
     raceData2000 = convertTracts(raceData2000,conversions2000to2010,'GEOID00','GEOID10','2000',true);//GEOID's are stored under this name
     raceData2000 = convertTracts(raceData2000,conversions2010to2020,'GEOID_TRACT_10','GEOID_TRACT_20','Converted 2010',true);//GEOID's are stored in column 8, here (0 indexed)
-    rentData2000 = convertTracts(rentData2000,conversions2000to2010,'GEOID00','GEOID10','2000',true);//GEOID's are stored under this name
-    rentData2000 = convertTracts(rentData2000,conversions2010to2020,'GEOID_TRACT_10','GEOID_TRACT_20','Converted 2010',true);//GEOID's are stored under this name
+   
+    rentBurdenData2000 = convertTracts(rentBurdenData2000,conversions2000to2010,'GEOID00','GEOID10','2000',true);//GEOID's are stored under this name
+    rentBurdenData2000 = convertTracts(rentBurdenData2000,conversions2010to2020,'GEOID_TRACT_10','GEOID_TRACT_20','Converted 2010',true);//GEOID's are stored under this name
+   
+    medianRentData2000 = convertTracts(medianRentData2000,conversions2000to2010,'GEOID00','GEOID10','2000',true);
+    medianRentData2000 = convertTracts(medianRentData2000,conversions2010to2020,'GEOID_TRACT_10','GEOID_TRACT_20','Converted 2010',true);
 }
 
 /*
@@ -49,7 +58,7 @@ function convertTracts(dataIn,conversionSheet,oldGeoIDColumnName,newGeoIDColumnN
     //New array of p5.TableRow objects to store the data in
     let convertedData = new p5.Table();
     convertedData.columns = dataIn.columns;
-    // convertedData.clearRows();
+
     //iterate over every row in the dataset
     for(let i = 0; i<min(dataIn.getRowCount(),1000000000); i++){
         let originalTract = dataIn.getRow(i);
@@ -105,7 +114,7 @@ function convertTracts(dataIn,conversionSheet,oldGeoIDColumnName,newGeoIDColumnN
                 if(!silently){
                     console.log("Creating a new tract...");
                     console.log("start:");
-                    console.log(newTract.get('Total'));
+                    // console.log(newTract.get('Total'));
                 }
                 //copy in each data point, and weight it
                 for(let j = 0; j<dataIn.getColumnCount(); j++){
@@ -114,7 +123,7 @@ function convertTracts(dataIn,conversionSheet,oldGeoIDColumnName,newGeoIDColumnN
                 }
             }
             newTract.set('GEOID','1400000US'+newGeoID);
-            newTract.set('Label for GEO_ID',"Census Tract "+newGeoID.slice(-6));
+            // newTract.set('Label for GEO_ID',"Census Tract "+newGeoID.slice(-6));
             newTract.set('County',newGeoID.slice(-9,-6));
             newTract.set('Tract',newGeoID.slice(-6));
 
@@ -124,7 +133,7 @@ function convertTracts(dataIn,conversionSheet,oldGeoIDColumnName,newGeoIDColumnN
             
             if(!silently){
                 console.log("end:");
-                console.log(newTract.get('Total'));
+                // console.log(newTract.get('Total'));
             }
         }
     }

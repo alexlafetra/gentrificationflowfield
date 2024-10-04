@@ -270,10 +270,11 @@ void main() {
 `;
 
 const drawParticlesFS = glsl`
-precision highp float;
+precision lowp float;
 varying vec4 vColor;
 uniform vec4 uRepulsionColor;
 uniform vec4 uAttractionColor;
+uniform float uColorWeight;
 
 //borrowed from: https://gist.github.com/companje/29408948f1e8be54dd5733a74ca49bb9
 float map(float value, float min1, float max1, float min2, float max2) {
@@ -296,7 +297,7 @@ just some thots:
 */
 void main() {
     //slightly weight it towards repulsors, since they're visually less dominant w/ particles moving away from them
-    float val = vColor.x/(1.8*vColor.z);
+    float val = vColor.x/(uColorWeight*vColor.z);
     gl_FragColor = mix(uRepulsionColor,uAttractionColor,val*val);}
 `;
 

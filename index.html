@@ -33,17 +33,38 @@
       display:block;
       width:auto;
     }
+    #mainGraph{
+      margin:auto;
+      /* text-align: center; */
+    }
     .chart_title{
       font-family: Arial, Helvetica, sans-serif;
-      font-size:24px;
+      font-size:34px;
       font-weight:bolder;
+      color:black;
     }
-    .chart_attractor_equation{
+    .chart_title_small{
+      font-family: Arial, Helvetica, sans-serif;
+      font-size:14px;
+      font-weight:bolder;
+      font-style:italic;
+      color:black;
+    }
+    .chart_equation{
       font-family:'Times New Roman', Times, serif;
+      text-align:left;
       font-style:italic;
       font-size:16px;
       color:black;
     }
+    .chart_equation_small{
+      font-family:'Times New Roman', Times, serif;
+      text-align:left;
+      font-style:italic;
+      font-size:12px;
+      color:black;
+    }
+
     .gui_button{
       width:fit-content;
     }
@@ -68,7 +89,11 @@
       <p>This project started </p>
     </div> -->
     <div id = "app" style = "display:flex;">
-      <main></main>
+      <div id = "mainGraph">
+        <div id = "chartTitle" class = "chart_title"></div>
+        <div id = "chartEquation" class = "chart_equation"></div>
+        <main></main>
+      </div>
       <div id = "gui">
         <!-- <img src = "data/Prerendered/render_animated.gif" width = "300px;" height = "300px;"> -->
       </div>

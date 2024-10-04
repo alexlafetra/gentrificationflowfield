@@ -21,7 +21,6 @@ let flowField;
 let holcTexture;
 let tractOutlines;
 let presetFlowMask;
-// let backgroundTexture;
 
 let gl;
 let mainCanvas;
@@ -48,20 +47,18 @@ const defaultSettings = {
     particleVelocity : 0.004,
     flowInfluence : 1.0,
     randomMagnitude : 0.0,
-    // repulsionStrength : 3.0,
-    // attractionStrength : 3.0,
-    repulsionStrength : 0.6,
-    attractionStrength : 0.6,
-    canvasSize : 700,
+    repulsionStrength : 1,
+    attractionStrength : 1,
+    canvasSize : 800,
     useParticleMask : true, //for preventing particles from entering oceans
     isActive : true,
     renderFlowFieldDataTexture : true,
     renderCensusTracts: true,
-    renderAttractors : true,//render attractors
-    renderRepulsors : true,//render repulsors
+    renderNodes : true,
     repulsionColor : [20,0,180],
     attractionColor : [255,0,120],
-    mouseInteraction : false
+    mouseInteraction : false,
+    colorWeight: 1.8
 };
 
 const viewPresets = [
@@ -70,6 +67,13 @@ const viewPresets = [
         x: 125,
         y: 125,
         scale: 280,
+        settings: defaultSettings
+    },
+    {
+        name: "Zoom on East Bay/SF/South Bay",
+        x: 250,
+        y: 225,
+        scale: 700,
         settings: defaultSettings
     },
     {
@@ -199,6 +203,13 @@ function initGL(){
     gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(ids), gl.STATIC_DRAW);
 }
 
+function logSettingsToConsole(){
+    console.log("const settings = "+JSON.stringify(flowField.flowField.settings));
+}
+function logSettingsToJSON(){
+
+}
+
 function fillFBOwithRandom(fbo,scale,seed){
     fbo.begin();
     shader(randomShader);
@@ -217,17 +228,12 @@ function loadPresetMaps(){
     presetFlowMask = loadImage("data/prerendered/flowFieldMask.png");
     tractOutlines = loadImage("data/prerendered/censusTractOutlines.png");
     holcTexture = loadImage("data/prerendered/HOLCTractOutlines.png");
-    // backgroundTexture = loadImage("data/prerendered/background.png");
 }
 
 function preload(){
     if(devMode)
         loadCensusCSVData();
     loadPresetMaps();
-}
-
-function randomColor(){
-    return color(random(0,255),random(0,255),random(0,255));
 }
 
 function renderTransformedImage(img,sf = mainCanvas.width*2/5){
@@ -263,14 +269,13 @@ function setup_DevMode(){
     scale = {x:s,y:s*(-1)};//manually adjusting the scale to taste
 
     //drawing background
-    tractOutlines = createFramebuffer({width:width,height:height});
-    tractOutlines.begin();
-    // blendMode(REPLACE);
-    background(0);
-    noStroke();
-    renderTracts(geoOffset,(t) => fill(255,0));
-    tractOutlines.end();
-    saveCanvas(tractOutlines,'background.png','png');
+    // tractOutlines = createFramebuffer({width:width,height:height});
+    // tractOutlines.begin();
+    // background(0);
+    // noStroke();
+    // renderTracts(geoOffset,(t) => fill(255,0));
+    // tractOutlines.end();
+    // saveCanvas(tractOutlines,'background.png','png');
 
     //drawing tract outlines
 
@@ -295,8 +300,6 @@ function setup_DevMode(){
     flowField = new CensusDataFlowField();
 
 }
-
-let testArray,testTitle;
 function setup_Prerendered(){
     createPremadePresets();
     //the manual offset
@@ -304,8 +307,6 @@ function setup_Prerendered(){
     let s = mainCanvas.width*2/5;
     scale = {x:s,y:s*(-1)};//manually adjusting the scale to taste
     flowField = new CensusDataFlowField();
-    testArray = [flowField.flowField.attractorArray,flowField.flowField.repulsorArray];
-    testTitle = flowField.censusDataPreset.title;
 }
 
 function logPresets(){
@@ -322,7 +323,7 @@ function logPresets(){
 function setup(){
     //create canvas and grab webGL context
     // mainCanvas = createCanvas(4000,4000,WEBGL);
-    mainCanvas = createCanvas(700,700,WEBGL);
+    mainCanvas = createCanvas(defaultSettings.canvasSize,defaultSettings.canvasSize,WEBGL);
     gl = mainCanvas.GL;
     randomShader = createShader(randomVert,randomFrag);
 

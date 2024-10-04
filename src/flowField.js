@@ -35,6 +35,7 @@ class FlowField{
         //canvases for drawing to
         this.particleCanvas = createFramebuffer({width:this.settings.canvasSize,height:this.settings.canvasSize,format:FLOAT,depth:false});
         this.renderFBO = createFramebuffer({width:this.settings.canvasSize,height:this.settings.canvasSize,format:FLOAT,depth:false});
+        this.nodeTexture = createFramebuffer({width:mainCanvas.width,height:mainCanvas.height,textureFiltering:NEAREST,depth:false});//the nodes are drawn to this FBO, so they don't need to be redrawn each frame
 
         //move the particle mask to the correct view
         this.updateParticleMask();
@@ -53,21 +54,25 @@ class FlowField{
         this.settings = settings;
     }
     renderNodes(){
+        this.nodeTexture.begin();
+        clear();
         let trueMin = this.nodes[0].strength;
         let trueMax = this.nodes[this.nodes.length-1].strength;
         for(let node of this.nodes){
             const x = node.x*scale.x+offset.x;
             const y = -node.y*scale.x+offset.y;
             const force = map(node.strength,trueMin+0.3,trueMax-0.3,0,5);
-            if(force<2)
-                continue;
+            // if(force<2)
+            //     continue;
             let temp = map(node.strength,trueMin+0.3,trueMax-0.3,0,1);
             fill(lerpColor(this.settings.repulsionColor,this.settings.attractionColor,temp));
             noStroke();
             ellipse(x,y,force,force);
         }
+        this.nodeTexture.end();
     }
     loadNodes(nodes){
+        console.log(nodes);
         //sort nodes by strength
         nodes.sort((a,b) => {
             if(a.strength>b.strength)
@@ -117,6 +122,7 @@ class FlowField{
             this.NUMBER_OF_ATTRACTORS++;
         }
         this.updateFlow();
+        this.renderNodes();
     }
     updateFlow(){
         const newShader = createFlowFieldShader(this.NUMBER_OF_ATTRACTORS,this.NUMBER_OF_REPULSORS);
@@ -223,7 +229,7 @@ class FlowField{
         shader(this.drawParticlesShader);
         this.drawParticlesShader.setUniform('uPositionTexture',this.particleDataTexture);
         this.drawParticlesShader.setUniform('uColorTexture',this.flowMagnitudeTexture);
-
+        this.drawParticlesShader.setUniform('uColorWeight',this.settings.colorWeight);
         this.drawParticlesShader.setUniform('uRepulsionColor',[this.settings.repulsionColor._array[0],this.settings.repulsionColor._array[1],this.settings.repulsionColor._array[2],1.0]);
         this.drawParticlesShader.setUniform('uAttractionColor',[this.settings.attractionColor._array[0],this.settings.attractionColor._array[1],this.settings.attractionColor._array[2],1.0]);
         this.drawParticlesShader.setUniform('uTextureDimensions',[dataTextureDimension,dataTextureDimension]);
@@ -247,28 +253,24 @@ class FlowField{
         image(this.renderFBO,-mainCanvas.width/2,-mainCanvas.height/2,mainCanvas.width,mainCanvas.height);
     }
     renderData(){
-        image(this.particleDataTexture,-width/2,-height/2,width/3,height/3);
+        const dataSize = 100;
+        image(this.particleDataTexture,-width/2,-height/2,dataSize,dataSize);
         fill(0);
         noStroke();
-        rect(-width/2,-height/2+height/3,width/3,height/3);
-        image(this.flowFieldTexture,-width/2,-height/2+height/3,width/3,height/3);
-        fill(255);
-        rect(-width/2,-height/2+2*height/3,width/3,height/3);
-
-        image(this.flowMagnitudeTexture,-width/2,-height/2+2*height/3,width/3,height/3);
+        rect(-width/2,-height/2+dataSize,dataSize,dataSize);
+        image(this.flowFieldTexture,-width/2,-height/2+dataSize,dataSize,dataSize);
+        image(this.flowMagnitudeTexture,-width/2,-height/2+2*dataSize,dataSize,dataSize);
     }
     render(){
-        if(this.settings.renderCensusTracts){
-            // renderTransformedImage(presetFlowMask);
+        if(this.settings.renderCensusTracts)
             renderTransformedImage(tractOutlines);
-        }
         if(this.settings.renderHOLCTracts)
             renderTransformedImage(holcTexture);
+        if(this.settings.renderNodes)
+            image(this.nodeTexture,-width/2,-height/2,width,height);
         this.renderGL();
-        this.renderNodes(this.settings.renderAttractors,this.settings.renderRepulsors);
-        if(this.settings.renderFlowFieldDataTexture){
+        if(this.settings.renderFlowFieldDataTexture)
             this.renderData();
-        }
     }
     updateParticles(){
         this.updateAge();
