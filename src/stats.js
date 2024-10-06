@@ -132,6 +132,12 @@ function rentBurden40to49(tract){
 function rentBurden50orMore(tract){
     return rentBurden(tract,'50 percent or more');
 }
+function rentBurdenLessThan25Stat(tract){
+    return rentBurden(tract,'Less than 10 percent')+rentBurden(tract,'10 to 14 percent')+rentBurden(tract,'15 to 19 percent')+rentBurden(tract,'20 to 24 percent');
+}
+function rentBurden25To50(tract){
+    return rentBurden(tract,'25 to 29 percent')+rentBurden(tract,'30 to 34 percent')+rentBurden(tract,'35 to 39 percent')+rentBurden(tract,'40 to 49 percent');
+}
 function medianRentChange(tract){
     if(!tract.hasData)
         return 0;
@@ -205,6 +211,10 @@ function createPresets(){
     const rentBurden8 = new DemographicVis("Change in renters spending 40-49% of monthly income","", rentBurden40to49);
     const rentBurden9 = new DemographicVis("Change in renters spending more than 50% of monthly income","", rentBurden50orMore);
 
+    const rentBurdenLessThan25 = new DemographicVis("Change in renters spending less than 25% of monthly income on rent","", rentBurdenLessThan25Stat);
+    const rentBurdenLessThan50 = new DemographicVis("Change in renters spending 25%-50% of monthly income on rent","", rentBurden25To50);
+
+
     censusDataPresets = [
         whiteProportionComparisonPreset,
         blackProportionComparisonPreset,
@@ -223,7 +233,9 @@ function createPresets(){
         rentBurden6,
         rentBurden7,
         rentBurden8,
-        rentBurden9
+        rentBurden9,
+        rentBurdenLessThan25,
+        rentBurdenLessThan50,
     ];
 }
 function createPremadePresets(){
@@ -249,25 +261,29 @@ function createPremadePresets(){
   rentBurden7 = new Preset("Change in Population of Renters Spending 35-39% of Monthly Income","",preset15Nodes);
   rentBurden8 = new Preset("Change in Population of Renters Spending 40-49% of Monthly Income","",preset16Nodes);
   rentBurden9 = new Preset("Change in Population of Renters Spending More Than 50% of Monthly Income","",preset17Nodes);
+  const rentBurdenLessThan25 = new DemographicVis("Change in renters spending less than 25% of monthly income on rent","", preset18Nodes);
+  const rentBurdenLessThan50 = new DemographicVis("Change in renters spending 25%-50% of monthly income on rent","", preset19Nodes);
 
   censusDataPresets = [
-      whiteProportionComparisonPreset,
-      blackProportionComparisonPreset,
-      asianProportionComparisonPreset,
-      hispOrLatinoProportionComparisonPreset,
+    //   whiteProportionComparisonPreset,
+    //   blackProportionComparisonPreset,
+    //   asianProportionComparisonPreset,
+    //   hispOrLatinoProportionComparisonPreset,
       whiteComparisonPreset,
       blackComparisonPreset,
       asianComparisonPreset,
       hispOrLatinoComparisonPreset,
       medianRentChangePreset,
-      rentBurden1,
-      rentBurden2,
-      rentBurden3,
-      rentBurden4,
-      rentBurden5,
-      rentBurden6,
-      rentBurden7,
-      rentBurden8,
+      rentBurdenLessThan25,
+      rentBurdenLessThan50,
+    //   rentBurden1,
+    //   rentBurden2,
+    //   rentBurden3,
+    //   rentBurden4,
+    //   rentBurden5,
+    //   rentBurden6,
+    //   rentBurden7,
+    //   rentBurden8,
       rentBurden9
   ];
 }

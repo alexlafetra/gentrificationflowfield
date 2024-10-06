@@ -59,11 +59,12 @@ class CensusDataFlowField{
         this.colorWeightSlider = new GuiSlider(0.0,3.0, this.flowField.settings.colorWeight,0.01,"Color Balance",this.controlPanel);
 
         this.activeCheckbox = new GuiCheckbox("Run Simulation",this.flowField.settings.isActive,this.controlPanel);
+        this.drawParticlesCheckbox = new GuiCheckbox("Show Particles",this.flowField.settings.renderParticles,this.controlPanel);
         this.mouseInteractionCheckbox = new GuiCheckbox("Mouse Interaction",this.flowField.settings.mouseInteraction,this.controlPanel);
         this.showTractsCheckbox = new GuiCheckbox("Overlay Census Tract Boundaries",this.flowField.settings.renderCensusTracts,this.controlPanel);
         this.showHOLCCheckbox = new GuiCheckbox("Overlay HOLC Redlining Tracts",this.flowField.settings.renderHOLCTracts,this.controlPanel);
         this.showNodesCheckbox = new GuiCheckbox("Show Nodes",this.flowField.settings.renderNodes,this.controlPanel);
-        this.useParticleMaskCheckbox = new GuiCheckbox("Mask Off Oceans",this.flowField.settings.useParticleMask,this.controlPanel);
+        this.useParticleMaskCheckbox = new GuiCheckbox("Keep Particles From Moving Over Water",this.flowField.settings.useParticleMask,this.controlPanel);
         this.showDataCheckbox = new GuiCheckbox("Overlay Data Textures",this.flowField.settings.renderFlowFieldDataTexture,this.controlPanel);
        
         //save settings buttons
@@ -91,6 +92,7 @@ class CensusDataFlowField{
         this.flowField.settings.mouseInteraction = this.mouseInteractionCheckbox.value();
         this.flowField.settings.renderCensusTracts = this.showTractsCheckbox.value();
         this.flowField.settings.renderHOLCTracts = this.showHOLCCheckbox.value();
+        this.flowField.settings.renderParticles = this.drawParticlesCheckbox.value();
 
         //updating repulsion/attraction strengths
         let needToUpdateFF = false;

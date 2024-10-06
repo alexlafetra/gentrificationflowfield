@@ -285,7 +285,8 @@ class FlowField{
             renderTransformedImage(holcTexture);
         if(this.settings.renderNodes)
             image(this.nodeTexture,-width/2,-height/2,width,height);
-        this.renderGL();
+        if(this.settings.renderParticles)
+            this.renderGL();
         if(this.settings.renderFlowFieldDataTexture)
             this.renderData();
     }

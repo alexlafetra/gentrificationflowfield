@@ -51,6 +51,7 @@ const defaultSettings = {
     renderFlowFieldDataTexture : false,
     renderCensusTracts: true,
     renderNodes : true,
+    renderParticles:true,
     repulsionColor : [20,0,180],
     attractionColor : [255,0,120],
     mouseInteraction : false,
