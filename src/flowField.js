@@ -151,6 +151,7 @@ class FlowField{
         this.calcFlowFieldShader.setUniform('uRepulsors',this.repulsorArray);
         this.calcFlowFieldShader.setUniform('uAttractionStrength',this.settings.attractionStrength);
         this.calcFlowFieldShader.setUniform('uRepulsionStrength',this.settings.repulsionStrength);
+        this.calcFlowFieldShader.setUniform('uClipAlphaChannel',false);
         rect(-this.flowFieldTexture.width/2,-this.flowFieldTexture.height/2,this.flowFieldTexture.width,this.flowFieldTexture.height);
         this.flowFieldTexture.end();
         this.updateFlowMagnitude();
@@ -269,7 +270,8 @@ class FlowField{
     }
     renderData(){
         const dataSize = 100;
-        const yStart = height/2-dataSize*4
+        // const yStart = height/2-dataSize*4
+        const yStart = -height/2;
         fill(0);
         noStroke();
         image(this.particleCanvas,-width/2,yStart,dataSize,dataSize);
@@ -285,6 +287,10 @@ class FlowField{
             renderTransformedImage(holcTexture);
         if(this.settings.renderNodes)
             image(this.nodeTexture,-width/2,-height/2,width,height);
+        if(this.settings.renderBigFlowField){
+            background(0);
+            image(this.flowFieldTexture,-width/2,-height/2,width,height);
+        }
         if(this.settings.renderParticles)
             this.renderGL();
         if(this.settings.renderFlowFieldDataTexture)

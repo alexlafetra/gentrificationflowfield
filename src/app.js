@@ -66,7 +66,8 @@ class CensusDataFlowField{
         this.showNodesCheckbox = new GuiCheckbox("Show Nodes",this.flowField.settings.renderNodes,this.controlPanel);
         this.useParticleMaskCheckbox = new GuiCheckbox("Keep Particles From Moving Over Water",this.flowField.settings.useParticleMask,this.controlPanel);
         this.showDataCheckbox = new GuiCheckbox("Overlay Data Textures",this.flowField.settings.renderFlowFieldDataTexture,this.controlPanel);
-       
+        this.renderBigFlowFieldCheckbox = new GuiCheckbox("Overlay Flow Field",this.flowField.settings.renderBigFlowField,this.controlPanel);
+        
         //save settings buttons
         this.logSettingsButton = new GuiButton("Log Settings To Console", logSettingsToConsole,this.controlPanel);
         
@@ -93,6 +94,8 @@ class CensusDataFlowField{
         this.flowField.settings.renderCensusTracts = this.showTractsCheckbox.value();
         this.flowField.settings.renderHOLCTracts = this.showHOLCCheckbox.value();
         this.flowField.settings.renderParticles = this.drawParticlesCheckbox.value();
+        this.flowField.settings.renderBigFlowField = this.renderBigFlowFieldCheckbox.value();
+
 
         //updating repulsion/attraction strengths
         let needToUpdateFF = false;

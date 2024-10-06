@@ -317,6 +317,8 @@ function createFlowFieldShader(nAttractors,nRepulsors){
         uniform vec2 uCoordinateOffset;//offset
         uniform float uScale;//scale
         uniform float uDimensions;//dimensions of mainCanvas
+
+        uniform bool uClipAlphaChannel;
         
         void main(){
             vec2 attraction = vec2(0.0);
@@ -349,9 +351,13 @@ function createFlowFieldShader(nAttractors,nRepulsors){
             attraction /= attractorCount;
             repulsion /= repulsorCount;
             //Storing both attraction and repulsion in the same texture
-            gl_FragColor = vec4(attraction,repulsion);
-            // gl_FragColor = vec4(attraction,repulsion.x,0.5*repulsion.y+1.0);
+            if(uClipAlphaChannel){
+                gl_FragColor = vec4(attraction,repulsion.x,0.5*repulsion.y+1.0);
             //^^ Prevents alpha channel from clipping -- use this if you want to save the flow field to a texture!
+            }
+            else{
+                gl_FragColor = vec4(attraction,repulsion);
+            }
         }
         `,
         vertexShader:

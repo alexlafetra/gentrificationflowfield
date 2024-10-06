@@ -235,40 +235,40 @@ function createPresets(){
         rentBurden8,
         rentBurden9,
         rentBurdenLessThan25,
-        rentBurdenLessThan50,
+        rentBurdenLessThan50
     ];
 }
 function createPremadePresets(){
   //Preset color/flows
-  whiteProportionComparisonPreset = new Preset("Change in Proportion of White Neighborhood Residents", "P<sub>White 2000</sub> / P<sub>Total 2000</sub> - P<sub>White 2020</sub> / P<sub>Total 2020</sub>",preset0Nodes);
-  blackProportionComparisonPreset = new Preset("Change in Proportion of Black Neighborhood Residents","P<sub>Black 2000</sub> / P<sub>Total 2000</sub> - P<sub>Black 2020</sub> / P<sub>Total 2020</sub>",preset1Nodes);
-  asianProportionComparisonPreset = new Preset("Change in Proportion of Asian Neighborhood Residents","P<sub>Asian 2000</sub> / P<sub>Total 2000</sub> - P<sub>Asian 2020</sub> / P<sub>Total 2020</sub>",preset2Nodes);
-  hispOrLatinoProportionComparisonPreset = new Preset("Change In Proportion of Hispanic or Latino Neighborhood Residents","P<sub>Hisp. or Latino 2000</sub> / P<sub>Total 2000</sub> - P<sub>Hisp. or Latino 2020</sub> / P<sub>Total 2020</sub>",preset3Nodes);
+  whiteProportionComparisonPreset = new Preset("Relative Change in Pop of White Neighborhood Residents", "P<sub>White 2000</sub> / P<sub>Total 2000</sub> - P<sub>White 2020</sub> / P<sub>Total 2020</sub>",preset0Nodes);
+  blackProportionComparisonPreset = new Preset("Relative Change in Pop of Black Neighborhood Residents","P<sub>Black 2000</sub> / P<sub>Total 2000</sub> - P<sub>Black 2020</sub> / P<sub>Total 2020</sub>",preset1Nodes);
+  asianProportionComparisonPreset = new Preset("Relative Change in Pop of Asian Neighborhood Residents","P<sub>Asian 2000</sub> / P<sub>Total 2000</sub> - P<sub>Asian 2020</sub> / P<sub>Total 2020</sub>",preset2Nodes);
+  hispOrLatinoProportionComparisonPreset = new Preset("Relative Change in Pop of Hispanic or Latino Neighborhood Residents","P<sub>Hisp. or Latino 2000</sub> / P<sub>Total 2000</sub> - P<sub>Hisp. or Latino 2020</sub> / P<sub>Total 2020</sub>",preset3Nodes);
 
-  whiteComparisonPreset = new Preset("Change in Population of White Neighborhood Residents","P<sub>White 2020</sub> - P<sub>White 2000</sub>",preset4Nodes);
-  blackComparisonPreset = new Preset("Change in Population of Black Neighborhood Residents","P<sub>Black 2020</sub> - P<sub>Black 2000</sub>",preset5Nodes);
-  asianComparisonPreset = new Preset("Change in Population of Asian Neighborhood Residents","P<sub>Asian 2020</sub> - P<sub>Asian 2000</sub>",preset6Nodes);
-  hispOrLatinoComparisonPreset = new Preset("Change in Population of Hispanic or Latino Neighborhood Residents","P<sub>Hisp. or Latino 2020</sub> - P<sub>Hisp. or Latino 2000</sub>",preset7Nodes);
+  whiteComparisonPreset = new Preset("Direct Change in Population of White Neighborhood Residents","P<sub>White 2020</sub> - P<sub>White 2000</sub>",preset4Nodes);
+  blackComparisonPreset = new Preset("Direct Change in Population of Black Neighborhood Residents","P<sub>Black 2020</sub> - P<sub>Black 2000</sub>",preset5Nodes);
+  asianComparisonPreset = new Preset("Direct Change in Population of Asian Neighborhood Residents","P<sub>Asian 2020</sub> - P<sub>Asian 2000</sub>",preset6Nodes);
+  hispOrLatinoComparisonPreset = new Preset("Direct Change in Population of Hispanic or Latino Neighborhood Residents","P<sub>Hisp. or Latino 2020</sub> - P<sub>Hisp. or Latino 2000</sub>",preset7Nodes);
 
-  const medianRentChangePreset = new Preset("Change in Median Rent","Rent<sub>2020</sub> - Rent<sub>2000</sub>",preset8Nodes);
+  const medianRentChangePreset = new Preset("Change in Median Rent","Median Rent<sub>2020</sub> - Median Rent<sub>2000</sub>",preset8Nodes);
 
-  rentBurden1 = new Preset("Change in Population of Renters Spending Less Than 10% of Monthly Income","",preset9Nodes);
-  rentBurden2 = new Preset("Change in Population of Renters Spending 10-14% of Monthly Income","",preset10Nodes);
-  rentBurden3 = new Preset("Change in Population of Renters Spending 15-19% of Monthly Income","",preset11Nodes);
-  rentBurden4 = new Preset("Change in Population of Renters Spending 20-24% of Monthly Income","",preset12Nodes);
-  rentBurden5 = new Preset("Change in Population of Renters Spending 25-29% of Monthly Income","",preset13Nodes);
-  rentBurden6 = new Preset("Change in Population of Renters Spending 30-34% of Monthly Income","",preset14Nodes);
-  rentBurden7 = new Preset("Change in Population of Renters Spending 35-39% of Monthly Income","",preset15Nodes);
-  rentBurden8 = new Preset("Change in Population of Renters Spending 40-49% of Monthly Income","",preset16Nodes);
-  rentBurden9 = new Preset("Change in Population of Renters Spending More Than 50% of Monthly Income","",preset17Nodes);
-  const rentBurdenLessThan25 = new DemographicVis("Change in renters spending less than 25% of monthly income on rent","", preset18Nodes);
-  const rentBurdenLessThan50 = new DemographicVis("Change in renters spending 25%-50% of monthly income on rent","", preset19Nodes);
+//   const rentBurden1 = new Preset("Change in Population of Renters Spending Less Than 10% of Monthly Income","",preset9Nodes);
+//   const rentBurden2 = new Preset("Change in Population of Renters Spending 10-14% of Monthly Income","",preset10Nodes);
+//   const rentBurden3 = new Preset("Change in Population of Renters Spending 15-19% of Monthly Income","",preset11Nodes);
+//   const rentBurden4 = new Preset("Change in Population of Renters Spending 20-24% of Monthly Income","",preset12Nodes);
+//   const rentBurden5 = new Preset("Change in Population of Renters Spending 25-29% of Monthly Income","",preset13Nodes);
+//   const rentBurden6 = new Preset("Change in Population of Renters Spending 30-34% of Monthly Income","",preset14Nodes);
+//   const rentBurden7 = new Preset("Change in Population of Renters Spending 35-39% of Monthly Income","",preset15Nodes);
+//   const rentBurden8 = new Preset("Change in Population of Renters Spending 40-49% of Monthly Income","",preset16Nodes);
+  const rentBurdenGreaterThan50 = new Preset("Change in Population of Renters Spending More Than 50% of Monthly Income","P<sub>50-100% 2020</sub> - P<sub>50-100% 2000</sub>",preset17Nodes);
+  const rentBurdenLessThan25 = new Preset("Change in renters spending less than 25% of monthly income on rent","P<sub>0-25% 2020</sub> - P<sub>0-25% 2000</sub>", preset18Nodes);
+  const rentBurdenLessThan50 = new Preset("Change in renters spending 25%-50% of monthly income on rent","P<sub>25-50% 2020</sub> - P<sub>25-50% 2000</sub>", preset19Nodes);
 
   censusDataPresets = [
-    //   whiteProportionComparisonPreset,
-    //   blackProportionComparisonPreset,
-    //   asianProportionComparisonPreset,
-    //   hispOrLatinoProportionComparisonPreset,
+      whiteProportionComparisonPreset,
+      blackProportionComparisonPreset,
+      asianProportionComparisonPreset,
+      hispOrLatinoProportionComparisonPreset,
       whiteComparisonPreset,
       blackComparisonPreset,
       asianComparisonPreset,
@@ -284,7 +284,7 @@ function createPremadePresets(){
     //   rentBurden6,
     //   rentBurden7,
     //   rentBurden8,
-      rentBurden9
+    rentBurdenGreaterThan50
   ];
 }
 
