@@ -122,8 +122,8 @@ class CensusDataFlowField{
             scale = {x:this.activeViewPreset.scale,y:-this.activeViewPreset.scale};
             this.flowField.updateParticleMask();
             this.flowField.updateFlow();
-            this.flowField.renderNodes();
             this.flowField.resetParticles();
+            this.flowField.renderNodes();
         }
     }
     logFlowFieldData(presetName){

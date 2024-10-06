@@ -1,5 +1,4 @@
 /*
-
 Some inspiration:
 https://blog.mapbox.com/how-i-built-a-wind-map-with-webgl-b63022b5537f
 https://nullprogram.com/blog/2014/06/29/
@@ -8,12 +7,9 @@ https://apps.amandaghassaei.com/gpu-io/examples/fluid/
 
 Future improvements:
 get floating point textures working on mobile
-combine vel+position processing into one texture+shader pass?
 
 To render tract+mask textures:
 set canvas size (mainCanvas) to 1000x1000
-
-Add in something about financial policy
 
 */
 
@@ -27,7 +23,6 @@ let mainCanvas;
 let idBuffer;
 
 const dataTextureDimension = 200;
-let randomShader;
 let drawParticlesProgram;
 let drawParticlesProgLocs;
 
@@ -43,22 +38,23 @@ const defaultSettings = {
     particleCount : 40000,
     trailDecayValue : 0.04,
     particleSize : 1.4,
-    particleAgeLimit : 1.2,//this*100 ::> how many frames particles live for
-    particleVelocity : 0.004,
+    particleAgeLimit : 4,//this*100 ==> how many frames particles live for
+    framesBeforeLoop : 60,
+    particleVelocity : 0.015,
     flowInfluence : 1.0,
     randomMagnitude : 0.0,
-    repulsionStrength : 0.4,
-    attractionStrength : 0.4,
+    repulsionStrength : 1,
+    attractionStrength : 1,
     canvasSize : 800,
     useParticleMask : true, //for preventing particles from entering oceans
     isActive : true,
-    renderFlowFieldDataTexture : true,
+    renderFlowFieldDataTexture : false,
     renderCensusTracts: true,
     renderNodes : true,
     repulsionColor : [20,0,180],
     attractionColor : [255,0,120],
     mouseInteraction : false,
-    colorWeight: 1.8
+    colorWeight: 1.6
 };
 
 const viewPresets = [
@@ -183,8 +179,6 @@ const viewPresets = [
     }
 ];
 
-let ids;
-
 function initGL(){
     drawParticlesProgram = webglUtils.createProgramFromSources(
         gl, [drawParticlesVS, drawParticlesFS]);
@@ -197,7 +191,7 @@ function initGL(){
         uTextureDimensions: gl.getUniformLocation(drawParticlesProgram, 'uTextureDimensions'),
         uMatrix: gl.getUniformLocation(drawParticlesProgram, 'uMatrix'),
     };
-    ids = new Array(dataTextureDimension*dataTextureDimension).fill(0).map((_, i) => i);
+    let ids = new Array(dataTextureDimension*dataTextureDimension).fill(0).map((_, i) => i);
     idBuffer = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, idBuffer);
     gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(ids), gl.STATIC_DRAW);
@@ -205,18 +199,6 @@ function initGL(){
 
 function logSettingsToConsole(){
     console.log("const settings = "+JSON.stringify(flowField.flowField.settings));
-}
-function logSettingsToJSON(){
-
-}
-
-function fillFBOwithRandom(fbo,scale,seed){
-    fbo.begin();
-    shader(randomShader);
-    randomShader.setUniform('uScale',scale);
-    randomShader.setUniform('uRandomSeed',seed);
-    quad(-1,-1,-1,1,1,1,1,-1);
-    fbo.end();
 }
 
 //All this freakin mess because you can't write a floating pt texture to png right now
@@ -344,7 +326,6 @@ function setup(){
     // mainCanvas = createCanvas(4000,4000,WEBGL);
     mainCanvas = createCanvas(defaultSettings.canvasSize,defaultSettings.canvasSize,WEBGL);
     gl = mainCanvas.GL;
-    randomShader = createShader(randomVert,randomFrag);
 
     if(devMode)
         setup_DevMode();

@@ -122,17 +122,17 @@ precision highp float;
 precision highp sampler2D;
 
 uniform float uAgeLimit;
+uniform float uAgeIncrement;
 varying vec2 vTexCoord;
 
 uniform sampler2D uAgeTexture;
 void main(){
-    float increment = 0.01;
     vec4 currentAge = texture2D(uAgeTexture,vTexCoord);
     // //if you're too old, set age to 0 (at this point, the position should be reset by the pos shader)
-    if(currentAge.x > uAgeLimit)
+    if(currentAge.x >= uAgeLimit)
         gl_FragColor = vec4(0.0,0.0,0.0,1.0);
     else
-        gl_FragColor = vec4(currentAge.x+increment,currentAge.x+increment,currentAge.x+increment,1.0);
+        gl_FragColor = vec4(currentAge.x+uAgeIncrement,currentAge.x+uAgeIncrement,currentAge.x+uAgeIncrement,1.0);
 }
 `;
 
@@ -188,24 +188,23 @@ void main(){
     vec4 particleData =  texture2D(uParticlePosTexture,vParticleCoord);
     vec2 screenPosition = particleData.xy;//position data is stored in the r,g channels
     vec2 particleVelocity = particleData.zw;//velocity data is stored in the b,a channels
-    if(uMouseInteraction){
-        float dM = distance(screenPosition,uMousePosition);
-        particleVelocity += (screenPosition-uMousePosition)/(10.0*dM*dM);
-    }
 
     //checking the age of the particle
     vec4 textureAge = texture2D(uParticleAgeTexture,vParticleCoord);
 
-    //if it's too old, put it somewhere random (within the mask) and return
-    if(textureAge.x > uAgeLimit){
+    //if it's too old, reset it
+    if(textureAge.x >= uAgeLimit){
         vec4 initialData = texture2D(uInitialData,vParticleCoord);//use this for looping
         screenPosition = initialData.xy;
         particleVelocity = initialData.zw;
-
     }
     //getting the random vel
     if(uRandomScale>0.0){
         particleVelocity += uRandomScale*vec2(random(screenPosition.xx)-0.5,random(screenPosition.yy)-0.5);
+    }
+    if(uMouseInteraction){
+        float dM = distance(screenPosition,uMousePosition);
+        particleVelocity += (screenPosition-uMousePosition)/(10.0*dM*dM);
     }
 
     vec4 flowForce =  texture2D(uFlowFieldTexture,screenPosition);
@@ -230,7 +229,7 @@ void main(){
             return;
         }
     }
-    //you actually don't need to wrap bounds b/c of the particle age decay
+    //you don't need to wrap bounds b/c of the particle age decay
     gl_FragColor = vec4(newPos,newVelocity);
 }
 `;
