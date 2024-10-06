@@ -1,32 +1,6 @@
 //Storing some overall totals in the "totalStats" object
 let totalStats;
 
-function raceRatio2020to2000(tract,field){
-    if(tract.raceData2000 == undefined || tract.raceData2020 == undefined)
-        return 0;
-    const val = tract.raceData2020.obj[field]/tract.raceData2000.obj[field];
-    if(val == NaN)
-        return 0;
-    if(val == Infinity)
-        return 0;
-    if(!val)
-        return 0;
-    return val;
-}
-
-function whitePeopleComparedTo2000(tract){
-    return raceRatio2020to2000(tract,'White');
-}
-function blackPeopleComparedTo2000(tract){
-    return raceRatio2020to2000(tract,'Black');
-}
-function asianPeopleComparedTo2000(tract){
-    return raceRatio2020to2000(tract,'Asian');
-}
-function hispanicOrLatinoPeopleComparedTo2000(tract){
-    return raceRatio2020to2000(tract,'Total races tallied for householders!!Total races tallied for Not Hispanic or Latino householders');
-}
-
 function raceDifference(tract,field){
     if(tract.raceData2000 == undefined || tract.raceData2020 == undefined)
         return 0;
@@ -57,6 +31,19 @@ function raceChangeInProportion(tract,field){
     if(tract.raceData2000 == undefined || tract.raceData2020 == undefined)
         return 0;
     const val = (tract.raceData2020.obj[field]/tract.raceData2020.obj.Total) - (tract.raceData2000.obj[field]/tract.raceData2000.obj.Total);
+    if(val == NaN)
+        return 0;
+    if(val == Infinity)
+        return 0;
+    if(!val)
+        return 0;
+    return val;
+}
+
+function directChangeInPopulation(tract){
+    if(!tract.hasData)
+        return 0;
+    const val = (tract.raceData2020.obj.Total) - (tract.raceData2000.obj.Total);
     if(val == NaN)
         return 0;
     if(val == Infinity)
@@ -193,6 +180,7 @@ function createPresets(){
     const blackProportionComparisonPreset = new DemographicVis("Change In Proportion of Black Population","P<sub>Black 2000</sub> / P<sub>Total 2000</sub> - P<sub>Black 2020</sub> / P<sub>Total 2020</sub>",proportionalBlackChange);
     const asianProportionComparisonPreset = new DemographicVis("Change In Proportion of Asian Population","P<sub>Asian 2000</sub> / P<sub>Total 2000</sub> - P<sub>Asian 2020</sub> / P<sub>Total 2020</sub>",proportionalAsianChange);
     const hispOrLatinoProportionComparisonPreset = new DemographicVis("Change In Proportion of Hispanic or Latino Population","P<sub>Hisp. or Latino 2000</sub> / P<sub>Total 2000</sub> - P<sub>Hisp. or Latino 2020</sub> / P<sub>Total 2020</sub>",proportionalHispOrLatinoChange);
+    const directPopChange = new DemographicVis("Direct Change in Total Population","Population<sub>2020</sub> - Population<sub>2000</sub>",directChangeInPopulation);
 
     const whiteComparisonPreset = new DemographicVis("Change in White Population","P<sub>White 2020</sub> - P<sub>White 2000</sub>",whitePeopleChange);
     const blackComparisonPreset = new DemographicVis("Change in Black Population","P<sub>Black 2020</sub> - P<sub>Black 2000</sub>",blackPeopleChange);
@@ -235,7 +223,8 @@ function createPresets(){
         rentBurden8,
         rentBurden9,
         rentBurdenLessThan25,
-        rentBurdenLessThan50
+        rentBurdenLessThan50,
+        directPopChange
     ];
 }
 function createPremadePresets(){
@@ -264,6 +253,8 @@ function createPremadePresets(){
   const rentBurdenLessThan25 = new Preset("Change in renters spending less than 25% of monthly income on rent","P<sub>0-25% 2020</sub> - P<sub>0-25% 2000</sub>", preset18Nodes);
   const rentBurdenLessThan50 = new Preset("Change in renters spending 25%-50% of monthly income on rent","P<sub>25-50% 2020</sub> - P<sub>25-50% 2000</sub>", preset19Nodes);
 
+  const directPopChange = new Preset("Direct Change in Total Population","Population<sub>2020</sub> - Population<sub>2000</sub>",preset20Nodes);
+
   censusDataPresets = [
       whiteProportionComparisonPreset,
       blackProportionComparisonPreset,
@@ -273,6 +264,7 @@ function createPremadePresets(){
       blackComparisonPreset,
       asianComparisonPreset,
       hispOrLatinoComparisonPreset,
+      directPopChange,
       medianRentChangePreset,
       rentBurdenLessThan25,
       rentBurdenLessThan50,

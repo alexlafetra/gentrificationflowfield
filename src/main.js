@@ -22,7 +22,7 @@ let gl;
 let mainCanvas;
 let idBuffer;
 
-const dataTextureDimension = 200;
+const dataTextureDimension = 400;
 let drawParticlesProgram;
 let drawParticlesProgLocs;
 
@@ -65,53 +65,30 @@ const viewPresets = [
         x: 125,
         y: 125,
         scale: 280,
-        settings: defaultSettings
     },
     {
         name: "Zoom on East Bay/SF/South Bay",
         x: 250,
         y: 225,
         scale: 700,
-        settings: defaultSettings
     },
     {
         name: "SF & Alameda County",
         x: 800,
         y: 800,
         scale: 1700,
-        settings: defaultSettings
     },
     {
         name: "San Francisco",
         x: 2850,
         y: 2000,
         scale: 5000,
-        settings: {
-            particleVelocity: 0.05,
-            particleCount: 40000,
-            trailDecayValue: 0.04,
-            particleSize: 1.4,
-            randomMagnitude: 0.0,
-            renderCensusTracts:true,
-            attractionStrength:4.0,
-            repulsionStrength:4.0
-        }
     },
     {
         name: "Marin",
         x: 3000,
         y: 2800,
         scale: 4000,
-        settings: {
-            particleVelocity: 0.05,
-            particleCount: 40000,
-            trailDecayValue: 0.04,
-            particleSize: 1.4,
-            randomMagnitude: 0.0,
-            renderCensusTracts:true,
-            attractionStrength:4.0,
-            repulsionStrength:4.0
-        }
     },
     {
         name: "South Bay",
@@ -124,48 +101,18 @@ const viewPresets = [
         x: 100,
         y: 0,
         scale: 2500,
-        settings: {
-            particleVelocity: 0.05,
-            particleCount: 40000,
-            trailDecayValue: 0.04,
-            particleSize: 1.4,
-            randomMagnitude: 0.0,
-            renderCensusTracts:true,
-            attractionStrength:3.0,
-            repulsionStrength:3.0
-        }
     },
     {
         name: "East Bay",
         x: 1200,
         y: 1450,
         scale: 3000,
-        settings: {
-            particleVelocity: 0.004,
-            particleCount: 40000,
-            trailDecayValue: 0.02,
-            particleSize: 1.4,
-            randomMagnitude: 0.0,
-            renderCensusTracts:true,
-            attractionStrength:1.0,
-            repulsionStrength:2.0
-        }
     },
     {
         name: "W. Oakland & Berkeley",
         x: 2500,
         y: 2900,
         scale: 6000,
-        settings: {
-            particleVelocity: 0.05,
-            particleCount: 40000,
-            trailDecayValue: 0.04,
-            particleSize: 1.4,
-            randomMagnitude: 0.0,
-            renderCensusTracts:true,
-            attractionStrength:3.0,
-            repulsionStrength:3.0
-        }
     },
     {
         name: "Richmond",

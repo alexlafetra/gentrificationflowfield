@@ -121,8 +121,6 @@ class CensusDataFlowField{
             this.activeViewPreset = viewPresets[this.geoScaleSelector.selected()];
             if(this.activeViewPreset.settings)
                 this.loadSimulationSettingsIntoGUI(this.activeViewPreset.settings);
-            else
-                this.loadSimulationSettingsIntoGUI(defaultSettings);
             offset = {x:this.activeViewPreset.x,y:this.activeViewPreset.y};
             scale = {x:this.activeViewPreset.scale,y:-this.activeViewPreset.scale};
             this.flowField.updateParticleMask();
