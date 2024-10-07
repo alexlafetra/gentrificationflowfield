@@ -367,7 +367,9 @@ function renderMapOutline(c){
 function setupMapData(){
     let features = tractGeometry.features;
     bayTracts = features;
+    console.log("cleaning census data...");
     cleanCensusData();
+    console.log("aligning to geography..");
     alignGeoAndData(features,[raceData2000,raceData2020,rentBurdenData2000,rentBurdenData2020,medianRentData2000,medianRentData2020]);
     getTotalStats();
     calculateGeographicCenters();

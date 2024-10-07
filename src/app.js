@@ -75,6 +75,10 @@ class CensusDataFlowField{
         this.saveGifButton = new GuiButton("Save GIF", saveFlowFieldGif,this.controlPanel);
         this.gifLengthTextbox = new GuiTextbox("30",this.controlPanel);
 
+        //save presets button
+        if(devMode)
+            this.savePresetsButton = new GuiButton("Save Presets to JSON", savePresetsToJSON,this.controlPanel);
+
         this.controlPanel.parent(gui);
     }
     updateParametersFromGui(){

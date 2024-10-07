@@ -38,11 +38,31 @@ class FlowField{
         this.renderFBO = createFramebuffer({width:this.settings.canvasSize,height:this.settings.canvasSize,format:FLOAT,depth:false});
         this.nodeTexture = createFramebuffer({width:mainCanvas.width,height:mainCanvas.height,textureFiltering:NEAREST,depth:false});//the nodes are drawn to this FBO, so they don't need to be redrawn each frame
 
+        //get the shader uniform locations so you can pass particle data in
+        this.initGL();
         //move the particle mask to the correct view
         this.updateParticleMask();
         //Initialize particle vel/positions w/ random noise
         this.resetParticles();
     }
+    initGL(){
+        this.drawParticlesProgram = webglUtils.createProgramFromSources(
+            gl, [drawParticlesVS, drawParticlesFS]);
+        this.drawParticlesProgLocs = {
+            id: gl.getAttribLocation(this.drawParticlesProgram, 'particleID'),
+            uPositionTexture: gl.getUniformLocation(this.drawParticlesProgram, 'uPositionTexture'),
+            uColorTexture: gl.getUniformLocation(this.drawParticlesProgram, 'uColorTexture'),
+            uAttractionTexture: gl.getUniformLocation(this.drawParticlesProgram, 'uAttractionTexture'),
+            uRepulsionTexture: gl.getUniformLocation(this.drawParticlesProgram, 'uRepulsionTexture'),
+            uTextureDimensions: gl.getUniformLocation(this.drawParticlesProgram, 'uTextureDimensions'),
+            uMatrix: gl.getUniformLocation(this.drawParticlesProgram, 'uMatrix'),
+        };
+        let ids = new Array(dataTextureDimension*dataTextureDimension).fill(0).map((_, i) => i);
+        this.idBuffer = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.idBuffer);
+        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(ids), gl.STATIC_DRAW);
+    }
+    
     //fills a texture/FBO with noise
     fillFBOwithRandom(fbo,scale,seed){
         fbo.begin();
@@ -225,10 +245,10 @@ class FlowField{
         this.particleCanvas.begin();
 
         //setting ID attributes (or trying to at least)
-        gl.bindBuffer(gl.ARRAY_BUFFER, idBuffer);
-        gl.enableVertexAttribArray(drawParticlesProgLocs.id);
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.idBuffer);
+        gl.enableVertexAttribArray(this.drawParticlesProgLocs.id);
         gl.vertexAttribPointer(
-            drawParticlesProgLocs.id,
+            this.drawParticlesProgLocs.id,
             1,         // size (num components)
             gl.FLOAT,  // type of data in buffer
             false,     // normalize

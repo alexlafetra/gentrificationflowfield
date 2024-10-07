@@ -20,11 +20,7 @@ let presetFlowMask;
 
 let gl;
 let mainCanvas;
-let idBuffer;
-
 const dataTextureDimension = 400;
-let drawParticlesProgram;
-let drawParticlesProgLocs;
 
 //Presets
 let censusDataPresets;
@@ -40,7 +36,7 @@ const defaultSettings = {
     particleSize : 1.4,
     particleAgeLimit : 4,//this*100 ==> how many frames particles live for
     framesBeforeLoop : 60,
-    particleVelocity : 0.015,
+    particleVelocity : 0.002,
     flowInfluence : 1.0,
     randomMagnitude : 0.0,
     repulsionStrength : 1,
@@ -128,24 +124,6 @@ const viewPresets = [
     }
 ];
 
-function initGL(){
-    drawParticlesProgram = webglUtils.createProgramFromSources(
-        gl, [drawParticlesVS, drawParticlesFS]);
-    drawParticlesProgLocs = {
-        id: gl.getAttribLocation(drawParticlesProgram, 'particleID'),
-        uPositionTexture: gl.getUniformLocation(drawParticlesProgram, 'uPositionTexture'),
-        uColorTexture: gl.getUniformLocation(drawParticlesProgram, 'uColorTexture'),
-        uAttractionTexture: gl.getUniformLocation(drawParticlesProgram, 'uAttractionTexture'),
-        uRepulsionTexture: gl.getUniformLocation(drawParticlesProgram, 'uRepulsionTexture'),
-        uTextureDimensions: gl.getUniformLocation(drawParticlesProgram, 'uTextureDimensions'),
-        uMatrix: gl.getUniformLocation(drawParticlesProgram, 'uMatrix'),
-    };
-    let ids = new Array(dataTextureDimension*dataTextureDimension).fill(0).map((_, i) => i);
-    idBuffer = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, idBuffer);
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(ids), gl.STATIC_DRAW);
-}
-
 function logSettingsToConsole(){
     console.log("const settings = "+JSON.stringify(flowField.flowField.settings));
 }
@@ -194,7 +172,6 @@ function saveFlowFieldGif(){
     saveGif(flowField.censusDataPreset.title+".gif", Number(flowField.gifLengthTextbox.value()),{units:'frames',delay:10})
 }
 
-
 function loadPresetMaps(){
     presetFlowMask = loadImage("data/prerendered/flowFieldMask.png");
     tractOutlines = loadImage("data/prerendered/censusTractOutlines.png");
@@ -226,27 +203,8 @@ function renderTransformedImage(img,sf = mainCanvas.width*2/5){
             sx,sy,sw,sh);
 }
 
-function setup_DevMode(){
-    createPresets();
-    //parsing data and attaching it to tract geometry
-    setupMapData();
-
-    //setting the offsets so that the first point in the first shape is centered
-    let samplePoint = bayTracts[0].geometry.coordinates[0][0][0];
-    geoOffset = {x:-samplePoint[0],y:-samplePoint[1]};
-    //the manual offset
-    offset = {x:mainCanvas.width/4,y:mainCanvas.height/4};
-    let s = mainCanvas.width*2/5;
-    scale = {x:s,y:s*(-1)};//manually adjusting the scale to taste
-
-    //drawing background
-    // tractOutlines = createFramebuffer({width:width,height:height});
-    // tractOutlines.begin();
-    // background(0);
-    // noStroke();
-    // renderTracts(geoOffset,(t) => fill(255,0));
-    // tractOutlines.end();
-    // saveCanvas(tractOutlines,'background.png','png');
+function renderTractsAndMask(){
+    //Resize canvas to 2000,2000 if you want to create a prerendered background
 
     //drawing tract outlines
 
@@ -267,28 +225,32 @@ function setup_DevMode(){
     // renderHOLCTracts(geoOffset,sjHolcTracts);
     // tractOutlines.end();
     // saveCanvas(tractOutlines, 'HOLCTractOutlines.png','png');
-
-    flowField = new CensusDataFlowField();
-
-}
-function setup_Prerendered(){
-    createPremadePresets();
-    //the manual offset
-    offset = {x:mainCanvas.width/4,y:mainCanvas.height/4};
-    let s = mainCanvas.width*2/5;
-    scale = {x:s,y:s*(-1)};//manually adjusting the scale to taste
-    flowField = new CensusDataFlowField();
 }
 
-function logPresets(){
+
+function getPresetsJSON(){
     let i = 0;
-    let bigString;
+    let bigString = "";
     for(let preset of censusDataPresets){
         let nodes = createNodesFromTracts(preset.demographicFunction);
         bigString += "const preset"+i+"Nodes = "+JSON.stringify(nodes)+";\n";
         i++;
     }
-    console.log(bigString);
+    return bigString;
+}
+function logPresets(){
+    console.log(getPresetsJSON());
+}
+
+function savePresetsToJSON(){
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([getPresetsJSON()], {
+    type: "text/plain"
+  }));
+  a.setAttribute("download", "presetData.js");
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
 }
 
 function setup(){
@@ -297,12 +259,25 @@ function setup(){
     mainCanvas = createCanvas(defaultSettings.canvasSize,defaultSettings.canvasSize,WEBGL);
     gl = mainCanvas.GL;
 
-    if(devMode)
-        setup_DevMode();
-    else
-        setup_Prerendered();
+    if(devMode){
+        console.log("creating presets...");
+        createPresets();
+        //parsing data and attaching it to tract geometry
+        setupMapData();
+        //setting the offsets so that the first point in the first shape is centered
+        let samplePoint = bayTracts[0].geometry.coordinates[0][0][0];
+        geoOffset = {x:-samplePoint[0],y:-samplePoint[1]};
+    }
+    else{
+        createPremadePresets();
+    }
+    //the manual offset
+    offset = {x:mainCanvas.width/4,y:mainCanvas.height/4};
+    let s = mainCanvas.width*2/5;
+    scale = {x:s,y:s*(-1)};//manually adjusting the scale to taste
 
-    initGL();
+    //build the flow field
+    flowField = new CensusDataFlowField();
 }
 
 function draw(){

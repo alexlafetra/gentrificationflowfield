@@ -92,6 +92,21 @@ function rentBurden(tract,field){
         return 0;
     return val;
 }
+
+function rentBurden_relative(tract,field){
+    if(tract.rentBurdenData2000 == undefined || tract.rentBurdenData2020 == undefined){
+        return 0;
+    }
+    let val = tract.rentBurdenData2020.obj[field]/tract.raceData2020.obj.Total-tract.rentBurdenData2000.obj[field]/tract.raceData2000.obj.Total;
+    if(val == NaN)
+        return 0;
+    if(val == Infinity)
+        return 0;
+    if(!val)
+        return 0;
+    return val;
+}
+
 function rentBurdenLessThan10(tract){
     return rentBurden(tract,'Less than 10 percent');
 }
@@ -116,15 +131,27 @@ function rentBurden35to39(tract){
 function rentBurden40to49(tract){
     return rentBurden(tract,'40 to 49 percent');
 }
-function rentBurden50orMore(tract){
+function rentBurden50orMore_direct(tract){
     return rentBurden(tract,'50 percent or more');
 }
-function rentBurdenLessThan25Stat(tract){
+function rentBurdenLessThan25Stat_direct(tract){
     return rentBurden(tract,'Less than 10 percent')+rentBurden(tract,'10 to 14 percent')+rentBurden(tract,'15 to 19 percent')+rentBurden(tract,'20 to 24 percent');
 }
-function rentBurden25To50(tract){
+function rentBurden25to50_direct(tract){
     return rentBurden(tract,'25 to 29 percent')+rentBurden(tract,'30 to 34 percent')+rentBurden(tract,'35 to 39 percent')+rentBurden(tract,'40 to 49 percent');
 }
+
+function rentBurden50orMore_relative(tract){
+    return rentBurden_relative(tract,'50 percent or more');
+}
+function rentBurdenLessThan25Stat_relative(tract){
+    return rentBurden_relative(tract,'Less than 10 percent')+rentBurden_relative(tract,'10 to 14 percent')+rentBurden_relative(tract,'15 to 19 percent')+rentBurden_relative(tract,'20 to 24 percent');
+
+}
+function rentBurden25to50_relative(tract){
+    return rentBurden_relative(tract,'25 to 29 percent')+rentBurden_relative(tract,'30 to 34 percent')+rentBurden_relative(tract,'35 to 39 percent')+rentBurden_relative(tract,'40 to 49 percent');
+}
+
 function medianRentChange(tract){
     if(!tract.hasData)
         return 0;
@@ -197,11 +224,14 @@ function createPresets(){
     const rentBurden6 = new DemographicVis("Change in renters spending 30-34% of monthly income","", rentBurden30to34);
     const rentBurden7 = new DemographicVis("Change in renters spending 35-39% of monthly income","", rentBurden35to39);
     const rentBurden8 = new DemographicVis("Change in renters spending 40-49% of monthly income","", rentBurden40to49);
-    const rentBurden9 = new DemographicVis("Change in renters spending more than 50% of monthly income","", rentBurden50orMore);
 
-    const rentBurdenLessThan25 = new DemographicVis("Change in renters spending less than 25% of monthly income on rent","", rentBurdenLessThan25Stat);
-    const rentBurdenLessThan50 = new DemographicVis("Change in renters spending 25%-50% of monthly income on rent","", rentBurden25To50);
+    const rentBurdenMoreThan50 = new DemographicVis("Direct Change in renters spending more than 50% of monthly income","", rentBurden50orMore_direct);
+    const rentBurdenLessThan25 = new DemographicVis("Direct Change in renters spending less than 25% of monthly income on rent","", rentBurdenLessThan25Stat_direct);
+    const rentBurdenLessThan50 = new DemographicVis("Direct Change in renters spending 25%-50% of monthly income on rent","", rentBurden25to50_direct);
 
+    const rentBurdenPresetLessThan25_relative = new DemographicVis("Relative Change in renters spending less than 25% of monthly income on rent","", rentBurdenLessThan25Stat_relative);
+    const rentBurdenPreset25to50_relative = new DemographicVis("Relative Change in renters spending 25%-50% of monthly income on rent","", rentBurden25to50_relative);
+    const rentBurdenPresetMoreThan50_relative = new DemographicVis("Relative Change in renters spending more than 50% of monthly income","", rentBurden50orMore_relative);
 
     censusDataPresets = [
         whiteProportionComparisonPreset,
@@ -221,10 +251,13 @@ function createPresets(){
         rentBurden6,
         rentBurden7,
         rentBurden8,
-        rentBurden9,
+        rentBurdenMoreThan50,
         rentBurdenLessThan25,
         rentBurdenLessThan50,
-        directPopChange
+        directPopChange,
+        rentBurdenPresetLessThan25_relative,
+        rentBurdenPreset25to50_relative,
+        rentBurdenPresetMoreThan50_relative
     ];
 }
 function createPremadePresets(){
@@ -249,11 +282,17 @@ function createPremadePresets(){
 //   const rentBurden6 = new Preset("Change in Population of Renters Spending 30-34% of Monthly Income","",preset14Nodes);
 //   const rentBurden7 = new Preset("Change in Population of Renters Spending 35-39% of Monthly Income","",preset15Nodes);
 //   const rentBurden8 = new Preset("Change in Population of Renters Spending 40-49% of Monthly Income","",preset16Nodes);
-  const rentBurdenGreaterThan50 = new Preset("Change in Population of Renters Spending More Than 50% of Monthly Income","P<sub>50-100% 2020</sub> - P<sub>50-100% 2000</sub>",preset17Nodes);
-  const rentBurdenLessThan25 = new Preset("Change in renters spending less than 25% of monthly income on rent","P<sub>0-25% 2020</sub> - P<sub>0-25% 2000</sub>", preset18Nodes);
-  const rentBurdenLessThan50 = new Preset("Change in renters spending 25%-50% of monthly income on rent","P<sub>25-50% 2020</sub> - P<sub>25-50% 2000</sub>", preset19Nodes);
+  const rentBurdenGreaterThan50 = new Preset("Direct Change in Population of Renters Spending More Than 50% of Monthly Income","P<sub>50-100% 2020</sub> - P<sub>50-100% 2000</sub>",preset17Nodes);
+  const rentBurdenLessThan25 = new Preset("Direct Change in renters spending less than 25% of monthly income on rent","P<sub>0-25% 2020</sub> - P<sub>0-25% 2000</sub>", preset18Nodes);
+  const rentBurdenLessThan50 = new Preset("Direct Change in renters spending 25%-50% of monthly income on rent","P<sub>25-50% 2020</sub> - P<sub>25-50% 2000</sub>", preset19Nodes);
 
   const directPopChange = new Preset("Direct Change in Total Population","Population<sub>2020</sub> - Population<sub>2000</sub>",preset20Nodes);
+
+  //these are kinda busted
+  const rentBurdenPresetLessThan25_relative = new Preset("Relative Change in renters spending less than 25% of monthly income on rent","", preset21Nodes);
+  const rentBurdenPreset25to50_relative = new Preset("Relative Change in renters spending 25%-50% of monthly income on rent","", preset22Nodes);
+  const rentBurdenPresetMoreThan50_relative = new Preset("Relative Change in renters spending more than 50% of monthly income","", preset23Nodes);
+
 
   censusDataPresets = [
       whiteProportionComparisonPreset,
@@ -276,7 +315,10 @@ function createPremadePresets(){
     //   rentBurden6,
     //   rentBurden7,
     //   rentBurden8,
-    rentBurdenGreaterThan50
+    rentBurdenGreaterThan50,
+    rentBurdenPresetLessThan25_relative,
+    rentBurdenPreset25to50_relative,
+    rentBurdenPresetMoreThan50_relative
   ];
 }
 
