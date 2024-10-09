@@ -158,7 +158,6 @@ const updateParticleDataFrag = glsl`
 precision highp float;
 precision highp sampler2D;
 
-uniform sampler2D uParticleVelTexture;
 uniform sampler2D uFlowFieldTexture;
 uniform sampler2D uParticlePosTexture;
 uniform sampler2D uParticleAgeTexture;

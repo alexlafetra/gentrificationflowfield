@@ -226,19 +226,7 @@ function renderTransformedImage(img,sf = mainCanvas.width*2/5){
             sx,sy,sw,sh);
 }
 
-function setup_DevMode(){
-    createPresets();
-    //parsing data and attaching it to tract geometry
-    setupMapData();
-
-    //setting the offsets so that the first point in the first shape is centered
-    let samplePoint = bayTracts[0].geometry.coordinates[0][0][0];
-    geoOffset = {x:-samplePoint[0],y:-samplePoint[1]};
-    //the manual offset
-    offset = {x:mainCanvas.width/4,y:mainCanvas.height/4};
-    let s = mainCanvas.width*2/5;
-    scale = {x:s,y:s*(-1)};//manually adjusting the scale to taste
-
+function saveTractsAndMaskTexture(){
     //drawing background
     // tractOutlines = createFramebuffer({width:width,height:height});
     // tractOutlines.begin();
@@ -267,17 +255,6 @@ function setup_DevMode(){
     // renderHOLCTracts(geoOffset,sjHolcTracts);
     // tractOutlines.end();
     // saveCanvas(tractOutlines, 'HOLCTractOutlines.png','png');
-
-    flowField = new CensusDataFlowField();
-
-}
-function setup_Prerendered(){
-    createPremadePresets();
-    //the manual offset
-    offset = {x:mainCanvas.width/4,y:mainCanvas.height/4};
-    let s = mainCanvas.width*2/5;
-    scale = {x:s,y:s*(-1)};//manually adjusting the scale to taste
-    flowField = new CensusDataFlowField();
 }
 
 function logPresets(){
@@ -291,20 +268,36 @@ function logPresets(){
     console.log(bigString);
 }
 
+
+
 function setup(){
-    //create canvas and grab webGL context
-    // mainCanvas = createCanvas(4000,4000,WEBGL);
-    mainCanvas = createCanvas(defaultSettings.canvasSize,defaultSettings.canvasSize,WEBGL);
-    gl = mainCanvas.GL;
+    // //create canvas and grab webGL context
+    // // mainCanvas = createCanvas(4000,4000,WEBGL);
+    // mainCanvas = createCanvas(defaultSettings.canvasSize,defaultSettings.canvasSize,WEBGL);
+    // gl = mainCanvas.GL;
 
-    if(devMode)
-        setup_DevMode();
-    else
-        setup_Prerendered();
+    // if(devMode){
+    //     createPresets();
+    //     //parsing data and attaching it to tract geometry
+    //     setupMapData();
+    
+    //     //setting the offsets so that the first point in the first shape is centered
+    //     let samplePoint = bayTracts[0].geometry.coordinates[0][0][0];
+    //     geoOffset = {x:-samplePoint[0],y:-samplePoint[1]};
+    // }
+    // else{
+    //     createPremadePresets();
+    // }
+    // //the manual offset
+    // offset = {x:mainCanvas.width/4,y:mainCanvas.height/4};
+    // let s = mainCanvas.width*2/5;
+    // scale = {x:s,y:s*(-1)};//manually adjusting the scale to taste
+    // flowField = new CensusDataFlowField();
+    // initGL();
 
-    initGL();
+    // initGPUIO(defaultSettings);
 }
 
 function draw(){
-    flowField.run();
+    // flowField.run();
 }

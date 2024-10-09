@@ -179,7 +179,6 @@ class FlowField{
         this.particleDataTextureBuffer.begin();
         clear();
         shader(this.updateParticleDataShader);
-        this.updateParticleDataShader.setUniform('uParticleVelTexture',this.velTexture);
         this.updateParticleDataShader.setUniform('uFlowFieldTexture',this.flowFieldTexture);
         this.updateParticleDataShader.setUniform('uParticlePosTexture',this.particleDataTexture);
         this.updateParticleDataShader.setUniform('uDamp',this.settings.particleVelocity/10.0);
