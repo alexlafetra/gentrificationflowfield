@@ -91,6 +91,7 @@ class FlowFieldSelector{
         this.textContainer.parent(this.container);
 
         this.selector = createSelect();
+        let indexOfDefaultOption = 0;
         for(let i = 0; i<options.length;i++){
             if(options[i].startsWith('<h>')){//check if it's a header
                 options[i] = options[i].slice(3);
@@ -99,9 +100,12 @@ class FlowFieldSelector{
             }
             else
                 this.selector.option(options[i],i);
+            if(options[i] === defaultOption)
+                indexOfDefaultOption = i;
+
         }
         this.selector.addClass("gui_select");
-        this.selector.selected(defaultOption);
+        this.selector.selected(indexOfDefaultOption);
         this.selector.parent(this.container);
 
         this.container.parent(container);

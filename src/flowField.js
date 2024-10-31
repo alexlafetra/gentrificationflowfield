@@ -323,7 +323,6 @@ class FlowField{
     run(){
         if(this.settings.isActive){
             this.updateParticles();
-            background(255);
             this.render();
         }
     }

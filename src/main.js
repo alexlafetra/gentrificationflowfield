@@ -13,14 +13,14 @@ set canvas size (mainCanvas) to 1000x1000
 
 */
 
-let flowField;
+let flowField,flowField2;
 let holcTexture;
 let tractOutlines;
 let presetFlowMask;
 
 let gl;
 let mainCanvas;
-const dataTextureDimension = 400;
+const dataTextureDimension = 200;
 
 //Presets
 let censusDataPresets;
@@ -205,26 +205,27 @@ function renderTransformedImage(img,sf = mainCanvas.width*2/5){
 
 function renderTractsAndMask(){
     //Resize canvas to 2000,2000 if you want to create a prerendered background
+    resizeCanvas(2000,2000);
 
     //drawing tract outlines
 
-    // tractOutlines = createFramebuffer({width:width,height:height});
-    // tractOutlines.begin();
-    // strokeWeight(1);
-    // renderTractOutlines(geoOffset,color(100));
-    // tractOutlines.end();
-    // saveCanvas(tractOutlines, 'censusTractOutlines.png','png');
+    tractOutlines = createFramebuffer({width:width,height:height});
+    tractOutlines.begin();
+    strokeWeight(1);
+    renderTractOutlines(geoOffset,color(100));
+    tractOutlines.end();
+    saveCanvas(tractOutlines, 'censusTractOutlines.png','png');
 
-    //drawing HOLC outlines
+    // drawing HOLC outlines
 
-    // tractOutlines = createFramebuffer({width:width,height:height});
-    // tractOutlines.begin();
-    // strokeWeight(1);
-    // renderHOLCTracts(geoOffset,oakHolcTracts);
-    // renderHOLCTracts(geoOffset,sfHolcTracts);
-    // renderHOLCTracts(geoOffset,sjHolcTracts);
-    // tractOutlines.end();
-    // saveCanvas(tractOutlines, 'HOLCTractOutlines.png','png');
+    tractOutlines = createFramebuffer({width:width,height:height});
+    tractOutlines.begin();
+    strokeWeight(1);
+    renderHOLCTracts(geoOffset,oakHolcTracts);
+    renderHOLCTracts(geoOffset,sfHolcTracts);
+    renderHOLCTracts(geoOffset,sjHolcTracts);
+    tractOutlines.end();
+    saveCanvas(tractOutlines, 'HOLCTractOutlines.png','png');
 }
 
 
@@ -255,7 +256,6 @@ function savePresetsToJSON(){
 
 function setup(){
     //create canvas and grab webGL context
-    // mainCanvas = createCanvas(4000,4000,WEBGL);
     mainCanvas = createCanvas(defaultSettings.canvasSize,defaultSettings.canvasSize,WEBGL);
     gl = mainCanvas.GL;
 
@@ -277,9 +277,10 @@ function setup(){
     scale = {x:s,y:s*(-1)};//manually adjusting the scale to taste
 
     //build the flow field
-    flowField = new CensusDataFlowField();
+    flowField = new CensusDataFlowField(censusDataPresets[0]);
 }
 
 function draw(){
+    background(255);
     flowField.run();
 }
