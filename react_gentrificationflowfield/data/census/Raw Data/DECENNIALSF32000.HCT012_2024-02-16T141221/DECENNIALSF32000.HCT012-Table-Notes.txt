@@ -1,0 +1,14 @@
+=============================================================================================================
+TABLE INFO
+=============================================================================================================
+
+ID: DECENNIALSF32000.HCT012
+Title: MEDIAN HOUSEHOLD INCOME IN 1999 (DOLLARS) BY TENURE [3]
+
+=============================================================================================================
+Notes
+=============================================================================================================
+
+<p>NOTE: Data based on a sample except in P3, P4, H3, and H4. For\ninformation on confidentiality protection, sampling error,\nnonsampling error, definitions, and count corrections see\n<a href=\"http://www.census.gov/prod/cen2000/doc/sf3.pdf\">http://www.census.gov/prod/cen2000/doc/sf3.pdf<\/a><\/p>
+
+-------------------------------------------------------------------------------------------------------------
