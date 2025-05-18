@@ -242,14 +242,16 @@ precision highp float;
 precision highp sampler2D;
 //attribute that we pass in using an array, to tell the shader which particle we're drawing
 attribute float particleID;
-uniform sampler2D uPositionTexture;
+uniform sampler2D uDataTexture;
 uniform sampler2D uColorTexture;
+uniform sampler2D uAgeTexture;
 
 uniform vec2 uTextureDimensions;
 uniform mat4 uMatrix;
 uniform float uParticleSize;
 
 varying vec4 vColor;
+varying float vFadeAmount;
 
 vec4 getValueFrom2DTextureAs1DArray(sampler2D tex, vec2 dimensions, float index) {
   float y = floor(index / dimensions.x);
@@ -260,9 +262,11 @@ vec4 getValueFrom2DTextureAs1DArray(sampler2D tex, vec2 dimensions, float index)
 
 void main() {
     // pull the position from the texture
-    vec4 position = getValueFrom2DTextureAs1DArray(uPositionTexture, uTextureDimensions, particleID);
+    vec4 position = getValueFrom2DTextureAs1DArray(uDataTexture, uTextureDimensions, particleID);
     //use the position to get the flow value
     vColor = texture2D(uColorTexture,position.xy);
+    //get the particle age to use as the fade amount
+    vFadeAmount = getValueFrom2DTextureAs1DArray(uAgeTexture, uTextureDimensions, particleID).y;
     gl_Position = vec4(position.xy,1.0,1.0)-vec4(0.5);
     gl_PointSize = uParticleSize;
 }
@@ -271,6 +275,7 @@ void main() {
 const drawParticlesFS = glsl`
 precision lowp float;
 varying vec4 vColor;
+varying float vFadeAmount;
 uniform vec4 uRepulsionColor;
 uniform vec4 uAttractionColor;
 uniform float uColorWeight;
@@ -297,7 +302,10 @@ just some thots:
 void main() {
     //slightly weight it towards repulsors, since they're visually less dominant w/ particles moving away from them
     float val = vColor.x/(uColorWeight*vColor.z);
-    gl_FragColor = mix(uRepulsionColor,uAttractionColor,val*val);}
+    vec4 color = mix(uRepulsionColor,uAttractionColor,val*val);
+    color.a = 1.0 - vFadeAmount;//fade alpha channel by particle age
+    gl_FragColor = color;
+}
 `;
 
 function createFlowFieldShader(nAttractors,nRepulsors){

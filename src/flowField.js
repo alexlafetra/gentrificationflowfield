@@ -260,11 +260,14 @@ class FlowField{
         gl.bindTexture(gl.TEXTURE_2D, this.particleDataTexture.colorTexture);
         gl.activeTexture(gl.TEXTURE1);
         gl.bindTexture(gl.TEXTURE_2D, this.flowMagnitudeTexture.colorTexture);
+        gl.activeTexture(gl.TEXTURE2);
+        gl.bindTexture(gl.TEXTURE_2D, this.particleAgeTexture.colorTexture);
 
         //running the particle-drawing shader
         shader(this.drawParticlesShader);
-        this.drawParticlesShader.setUniform('uPositionTexture',this.particleDataTexture);
+        this.drawParticlesShader.setUniform('uDataTexture',this.particleDataTexture);
         this.drawParticlesShader.setUniform('uColorTexture',this.flowMagnitudeTexture);
+        this.drawParticlesShader.setUniform('uAgeTexture',this.particleAgeTexture);
         this.drawParticlesShader.setUniform('uColorWeight',this.settings.colorWeight);
         this.drawParticlesShader.setUniform('uRepulsionColor',[this.settings.repulsionColor._array[0],this.settings.repulsionColor._array[1],this.settings.repulsionColor._array[2],1.0]);
         this.drawParticlesShader.setUniform('uAttractionColor',[this.settings.attractionColor._array[0],this.settings.attractionColor._array[1],this.settings.attractionColor._array[2],1.0]);
@@ -289,18 +292,18 @@ class FlowField{
         image(this.renderFBO,-mainCanvas.width/2,-mainCanvas.height/2,mainCanvas.width,mainCanvas.height);
     }
     renderData(){
-        const dataSize = 100;
-        // const yStart = height/2-dataSize*4
         const yStart = -height/2;
-        fill(0);
         noStroke();
-        image(this.particleCanvas,-width/2,yStart,dataSize,dataSize);
-        rect(-width/2,yStart+dataSize,dataSize,3*dataSize);
-        image(this.flowFieldTexture,-width/2,yStart+dataSize,dataSize,dataSize);
-        image(this.flowMagnitudeTexture,-width/2,yStart+2*dataSize,dataSize,dataSize);
-        image(this.particleDataTexture,-width/2,yStart+3*dataSize,dataSize,dataSize);
+        fill(0,0,0);
+        rect(-width/2,yStart,this.settings.dataSize,2*this.settings.dataSize);
+        fill(0,100,255);
+        rect(-width/2,yStart+this.settings.dataSize*2,this.settings.dataSize,this.settings.dataSize)
+        image(this.flowFieldTexture,-width/2,yStart,this.settings.dataSize,this.settings.dataSize);
+        image(this.flowMagnitudeTexture,-width/2,yStart+1*this.settings.dataSize,this.settings.dataSize,this.settings.dataSize);
+        image(this.particleDataTexture,-width/2,yStart+2*this.settings.dataSize,this.settings.dataSize,this.settings.dataSize);
     }
     render(){
+        background(this.settings.backgroundColor);
         if(this.settings.renderCensusTracts)
             renderTransformedImage(tractOutlines);
         if(this.settings.renderHOLCTracts)
