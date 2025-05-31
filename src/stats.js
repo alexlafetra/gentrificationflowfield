@@ -276,11 +276,11 @@ function createPresets(){
 
 function createPremadePresets(){
   //Preset color/flows
-  const whiteProportionComparisonPreset = new Preset("Relative Change in Pop of White Neighborhood Residents", "P<sub>White 2000</sub> / P<sub>Total 2000</sub> - P<sub>White 2020</sub> / P<sub>Total 2020</sub>",preset0Nodes);
-  const blackProportionComparisonPreset = new Preset("Relative Change in Pop of Black Neighborhood Residents","P<sub>Black 2000</sub> / P<sub>Total 2000</sub> - P<sub>Black 2020</sub> / P<sub>Total 2020</sub>",preset1Nodes);
-  const asianProportionComparisonPreset = new Preset("Relative Change in Pop of Asian Neighborhood Residents","P<sub>Asian 2000</sub> / P<sub>Total 2000</sub> - P<sub>Asian 2020</sub> / P<sub>Total 2020</sub>",preset2Nodes);
-  const hispOrLatinoProportionComparisonPreset = new Preset("Relative Change in Pop of Hispanic or Latino Neighborhood Residents","P<sub>Hisp. or Latino 2000</sub> / P<sub>Total 2000</sub> - P<sub>Hisp. or Latino 2020</sub> / P<sub>Total 2020</sub>",preset3Nodes);
-  const everyoneButWhitePplPreset = new Preset("All groups except white people","",preset4Nodes);
+  const whiteProportionComparisonPreset = new Preset("Relative Change in White Neighborhood Residency from 2000 to 2020", "P<sub>White 2000</sub> / P<sub>Total 2000</sub> - P<sub>White 2020</sub> / P<sub>Total 2020</sub>",preset0Nodes);
+  const blackProportionComparisonPreset = new Preset("Relative Change in Black Neighborhood Residency from 2000 to 2020","P<sub>Black 2000</sub> / P<sub>Total 2000</sub> - P<sub>Black 2020</sub> / P<sub>Total 2020</sub>",preset1Nodes);
+  const asianProportionComparisonPreset = new Preset("Relative Change in Asian Neighborhood Residency from 2000 to 2020","P<sub>Asian 2000</sub> / P<sub>Total 2000</sub> - P<sub>Asian 2020</sub> / P<sub>Total 2020</sub>",preset2Nodes);
+  const hispOrLatinoProportionComparisonPreset = new Preset("Relative Change in Hispanic or Latino Neighborhood Residency from 2000 to 2020","P<sub>Hisp. or Latino 2000</sub> / P<sub>Total 2000</sub> - P<sub>Hisp. or Latino 2020</sub> / P<sub>Total 2020</sub>",preset3Nodes);
+  const everyoneButWhitePplPreset = new Preset("Comparison of All Census Groups, Except White People, From 2000 to 2020","(P<sub>Total 2020</sub> - P<sub>White 2020</sub>) / P<sub>Total 2020</sub> - (P<sub>Total 2000</sub> - P<sub>White 2000</sub>) / P<sub>Total 2000</sub",preset4Nodes);
 
   const whiteComparisonPreset = new Preset("Direct Change in Population of White Neighborhood Residents","P<sub>White 2020</sub> - P<sub>White 2000</sub>",preset5Nodes);
   const blackComparisonPreset = new Preset("Direct Change in Population of Black Neighborhood Residents","P<sub>Black 2020</sub> - P<sub>Black 2000</sub>",preset6Nodes);

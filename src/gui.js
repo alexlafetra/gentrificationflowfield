@@ -104,6 +104,7 @@ class FlowFieldSelector{
                 indexOfDefaultOption = i;
 
         }
+        console.log(indexOfDefaultOption);
         this.selector.addClass("gui_select");
         this.selector.selected(indexOfDefaultOption);
         this.selector.parent(this.container);

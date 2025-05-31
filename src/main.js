@@ -33,10 +33,8 @@ let devMode = false;
 const defaultSettings = {
     backgroundColor: [255,255,255],
     particleCount : 40000,
-    // particleCount : 900,
-    trailDecayValue : 0.04,
-    particleSize : 1.4,
-    // particleSize : 6.0,
+    trailDecayValue : 0.02,
+    particleSize :0,
     particleAgeLimit : 1,//this*100 ==> how many frames particles live for
     framesBeforeLoop : 60,
     particleVelocity : 0.01,
@@ -44,10 +42,8 @@ const defaultSettings = {
     randomMagnitude : 0.0,
     repulsionStrength : 1.6,
     attractionStrength : 1,
-    // canvasSize : 800,
-    canvasSize : 1080,//big canvas
+    canvasSize : 600,//big canvas
     dataCanvasSize : 400,
-    // useParticleMask : false,
     useParticleMask : true, //for preventing particles from entering oceans
     isActive : true,
     renderFlowFieldDataTexture : false,
@@ -58,7 +54,7 @@ const defaultSettings = {
     repulsionColor : [20,0,180],
     attractionColor : [255,0,120],
     mouseInteraction : false,
-    colorWeight: 1.6
+    colorWeight: 2.22
 };
 
 // const defaultSettings = {backgroundColor:[255,0,0],particleCount:40000,trailDecayValue:0.017,particleSize:1,particleAgeLimit:1,framesBeforeLoop:60,particleVelocity:0.024,flowInfluence:1,randomMagnitude:1.11,repulsionStrength:0.411,attractionStrength:0.306,canvasSize:1080,dataSize:200,useParticleMask:true,isActive:true,renderFlowFieldDataTexture:true,renderCensusTracts:false,renderNodes:true,renderParticles:true,renderBigFlowField:false,repulsionColor:[0,64,255,255],attractionColor:[0,255,30,255],mouseInteraction:false,colorWeight:2.05,renderHOLCTracts:false};
@@ -292,8 +288,9 @@ function setup(){
     scale = {x:s,y:s*(-1)};//manually adjusting the scale to taste
 
     //build the flow field
-    flowField = new CensusDataFlowField(censusDataPresets[0]);
-    zip = new JSZip();
+    console.log(censusDataPresets);
+    flowField = new CensusDataFlowField(censusDataPresets[4]);
+    // zip = new JSZip();
 }
 
 function exportVideo(e) {

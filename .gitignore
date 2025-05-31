@@ -1,6 +1,9 @@
 .DS_Store
 data/.DS_Store
 readme/recordings
-data/census/Raw Data
-data/anim
+/data/census/Raw Data
+/data/anim
+/data/blender
+/data/geography
 /data/screenshots
+/react_gentrificationflowfield

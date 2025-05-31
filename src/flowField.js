@@ -153,6 +153,14 @@ class FlowField{
         this.updateFlow();
         this.renderNodes();
     }
+    clear(){
+        this.renderFBO.begin();
+        clear();
+        this.renderFBO.end();
+        this.particleCanvas.begin();
+        clear();
+        this.particleCanvas.end();
+    }
     updateFlow(){
         const newShader = createFlowFieldShader(this.NUMBER_OF_ATTRACTORS,this.NUMBER_OF_REPULSORS);
         this.calcFlowFieldShader = createShader(newShader.vertexShader,newShader.fragmentShader);

@@ -158,7 +158,6 @@ export const updateParticleDataFrag = `
 precision highp float;
 precision highp sampler2D;
 
-uniform sampler2D uParticleVelTexture;
 uniform sampler2D uFlowFieldTexture;
 uniform sampler2D uParticlePosTexture;
 uniform sampler2D uParticleAgeTexture;
@@ -242,8 +241,8 @@ precision highp float;
 precision highp sampler2D;
 //attribute that we pass in using an array, to tell the shader which particle we're drawing
 attribute float particleID;
-uniform sampler2D uDataTexture;
 uniform sampler2D uColorTexture;
+uniform sampler2D uDataTexture;
 uniform sampler2D uAgeTexture;
 
 uniform vec2 uTextureDimensions;
@@ -284,26 +283,11 @@ uniform float uColorWeight;
 float map(float value, float min1, float max1, float min2, float max2) {
     return min2 + (value - min1) * (max2 - min2) / (max1 - min1);
 }
-/*
-
-just some thots:
-// colors look weird bc when a particle is evenly pulled on by attractors, exor repulsors,
-// the magnitude of the respective force is very small. This means that even tho a particle
-// might be much closer to and more 'influenced' by a group of attractors, because it's 
-// being evenly pulled around by them even ONE external rep/attractor can outweigh the big group of
-// nodes nearby. Not sure how to best deal with this! The good news is that it looks pretty good as-is.
-
-// I think ideally you would recalculate the influence of attractors and repulsors by just adding up the magnitude of nodes/d^2,
-// and not letting opposing forces cancel out, but that's kind of expensive for just an aesthetic difference.
-// You could also write that data to another texture, but again, kind of expensive.
-
-^^ this is what it does now! Writes the flow magnitude to a texture, which is passed into this shader to color each particle.
-*/
 void main() {
     //slightly weight it towards repulsors, since they're visually less dominant w/ particles moving away from them
     float val = vColor.x/(uColorWeight*vColor.z);
+    vec4 color = vec4(vColor.z);
     // vec4 color = mix(uRepulsionColor,uAttractionColor,val*val);
-    vec4 color = vColor;
     color.a = 1.0 - vFadeAmount;//fade alpha channel by particle age
     gl_FragColor = color;
 }

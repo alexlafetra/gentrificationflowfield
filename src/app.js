@@ -2,11 +2,14 @@
 class CensusDataFlowField{
     constructor(preset){
         this.censusDataPreset = preset;
+        console.log(this.censusDataPreset);
         this.activeViewPreset = viewPresets[0];
         this.simulationParameterPreset = defaultSettings;
         this.flowField = new FlowField(defaultSettings);
         this.initGui();
+        console.log(this.censusDataPreset);
         this.updateParametersFromGui();
+        console.log(this.censusDataPreset);
         this.loadCensusPreset(this.censusDataPreset);
     }
     initGui(){
@@ -33,14 +36,15 @@ class CensusDataFlowField{
         for(let preset of censusDataPresets){
             options.push(preset.title);
         }
-        this.presetSelector = new FlowFieldSelector(options,this.censusDataPreset,"Demographic Data",this.controlPanel);
+        this.presetSelector = new FlowFieldSelector(options,this.censusDataPreset.title,"Demographic Data",this.controlPanel);
+        // this.presetSelector.
 
         //preset view selector
         const geoOptionNames = [];
         for(let view of viewPresets){
             geoOptionNames.push(view.name);
         }
-        this.geoScaleSelector = new FlowFieldSelector(geoOptionNames,0,"View",this.controlPanel);
+        this.geoScaleSelector = new FlowFieldSelector(geoOptionNames,this.activeViewPreset.name,"View",this.controlPanel);
 
         this.dampValueSlider = new GuiSlider(0.001,0.1, this.flowField.settings.particleVelocity,0.001,"Speed",this.controlPanel);
         this.randomValueSlider = new GuiSlider(0,10, this.flowField.settings.randomMagnitude,0.01,"Drift",this.controlPanel);

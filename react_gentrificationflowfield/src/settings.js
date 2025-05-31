@@ -1,7 +1,7 @@
 const defaultSettings = {
     dataTextureDimension : 200,
     devMode: false,
-    backgroundColor: [255,255,255],
+    backgroundColor: [0,0,255],
     particleCount : 40000,
     trailDecayValue : 0.04,
     // particleSize : 1.4,
@@ -16,7 +16,7 @@ const defaultSettings = {
     canvasSize : 400,//small canvas
     // canvasSize : 1080,//big canvas
     dataCanvasSize : 400,
-    useParticleMask : false, //for preventing particles from entering oceans
+    useParticleMask : true, //for preventing particles from entering oceans
     isActive : true,
     renderFlowFieldDataTexture : true,
     renderCensusTracts: true,
