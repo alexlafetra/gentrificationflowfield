@@ -5,7 +5,7 @@
  ![](readme/demo.gif)
 *This GIF: change in percentage of white residents in census tracts from 2000 to 2020*
 
- **Check out the interactive demo *[here](https://alexlafetra.github.io/gentrificationflowfield/)!*** (desktop only for now, floating point textures aren't supported on most mobile browsers)
+ **Check out the interactive demo [here](https://alexlafetra.github.io/gentrificationflowfield/)** (desktop only for now, floating point textures aren't supported on most mobile browsers)
  
  ## *Visualizing Housing Data Using A Flow Field*
 

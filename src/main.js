@@ -33,8 +33,10 @@ let devMode = false;
 const defaultSettings = {
     backgroundColor: [255,255,255],
     particleCount : 40000,
-    trailDecayValue : 0.02,
-    particleSize :0,
+    // particleCount : 900,
+    trailDecayValue : 0.04,
+    particleSize : 1.4,
+    // particleSize : 6.0,
     particleAgeLimit : 1,//this*100 ==> how many frames particles live for
     framesBeforeLoop : 60,
     particleVelocity : 0.01,
@@ -42,8 +44,10 @@ const defaultSettings = {
     randomMagnitude : 0.0,
     repulsionStrength : 1.6,
     attractionStrength : 1,
-    canvasSize : 600,//big canvas
+    // canvasSize : 800,
+    canvasSize : 1080,//big canvas
     dataCanvasSize : 400,
+    // useParticleMask : false,
     useParticleMask : true, //for preventing particles from entering oceans
     isActive : true,
     renderFlowFieldDataTexture : false,
@@ -54,13 +58,13 @@ const defaultSettings = {
     repulsionColor : [20,0,180],
     attractionColor : [255,0,120],
     mouseInteraction : false,
-    colorWeight: 2.22
+    colorWeight: 1.6
 };
 
 // const defaultSettings = {backgroundColor:[255,0,0],particleCount:40000,trailDecayValue:0.017,particleSize:1,particleAgeLimit:1,framesBeforeLoop:60,particleVelocity:0.024,flowInfluence:1,randomMagnitude:1.11,repulsionStrength:0.411,attractionStrength:0.306,canvasSize:1080,dataSize:200,useParticleMask:true,isActive:true,renderFlowFieldDataTexture:true,renderCensusTracts:false,renderNodes:true,renderParticles:true,renderBigFlowField:false,repulsionColor:[0,64,255,255],attractionColor:[0,255,30,255],mouseInteraction:false,colorWeight:2.05,renderHOLCTracts:false};
 // const defaultSettings = {backgroundColor:[0,0,0],particleCount:40000,trailDecayValue:0.046,particleSize:2.3,particleAgeLimit:1,framesBeforeLoop:60,particleVelocity:0.054,flowInfluence:1,randomMagnitude:0.49,repulsionStrength:0.411,attractionStrength:0.306,canvasSize:1080,dataSize:200,useParticleMask:true,isActive:true,renderFlowFieldDataTexture:true,renderCensusTracts:false,renderNodes:true,renderParticles:true,renderBigFlowField:false,repulsionColor:[255,0,0,255],attractionColor:[0,85,255,255],mouseInteraction:false,colorWeight:2.05,renderHOLCTracts:false};
 
-const viewPresets = [
+export const viewPresets = [
     {
         name: "Entire Bay Area",
         x: 125,
@@ -288,9 +292,8 @@ function setup(){
     scale = {x:s,y:s*(-1)};//manually adjusting the scale to taste
 
     //build the flow field
-    console.log(censusDataPresets);
-    flowField = new CensusDataFlowField(censusDataPresets[4]);
-    // zip = new JSZip();
+    flowField = new CensusDataFlowField(censusDataPresets[0]);
+    zip = new JSZip();
 }
 
 function exportVideo(e) {
@@ -349,6 +352,15 @@ function captureFrame() {
     }, 'image/png');
 }
 
+function downloadZip() {
+  zip.generateAsync({ type: 'blob' }).then((content) => {
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(content);
+    a.download = 'webgl_frames.zip';
+    a.click();
+  });
+}
+
 function keyPressed(){
     if(key == 'r'){
         if(!recording){
@@ -358,14 +370,6 @@ function keyPressed(){
         else
             recording = false;
     }
-}
-function downloadZip() {
-  zip.generateAsync({ type: 'blob' }).then((content) => {
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(content);
-    a.download = 'webgl_frames.zip';
-    a.click();
-  });
 }
 
 function draw(){

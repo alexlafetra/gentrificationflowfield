@@ -1,107 +1,137 @@
-class FlowField{
-    constructor(){
+import { updateParticleAgeFrag, updateParticleAgeVert, } from "./shaders";
+import { updateParticleDataVert, updateParticleDataFrag, } from "./shaders";
+import { drawParticlesVS, drawParticlesFS } from "./shaders";
+import { fadeToTransparentVert, fadeToTransparentFrag } from "./shaders";
+import { randomVert, randomFrag } from "./shaders";
+import { createFlowFieldShader } from "./shaders";
+import { createFlowMagnitudeShader } from "./shaders";
+import { createProgramFromSources } from "./utils/webGLUtils.js";
 
+export class FlowField{
+    constructor(settings,params){
         //settings
-        this.settings = JSON.parse(JSON.stringify(defaultSettings));
+        this.p5Ref = params.p5Ref;
+        this.mainCanvas = params.mainCanvas;
+        this.gl = params.gl;
+        this.scale = params.scale;
+        this.offset = params.offset;
+        this.holcTexture = params.holcTexture;
+        this.presetFlowMask = params.presetFlowMask;
+        this.tractOutlines = params.tractOutlines;
+        this.presets = params.presets;
 
         this.NUMBER_OF_ATTRACTORS = 0;
         this.NUMBER_OF_REPULSORS = 0;
+
+        //...no stroke?
+        this.p5Ref.noStroke();
         
         //data
         this.attractorArray = [];
         this.repulsorArray = [];
 
         //Shaders
-        this.updateParticleDataShader = createShader(updateParticleDataVert,updateParticleDataFrag);
-        this.updateParticleAgeShader = createShader(updateParticleAgeVert,updateParticleAgeFrag);
-        this.drawParticlesShader = createShader(drawParticlesVS,drawParticlesFS);
-        this.fadeParticleCanvasShader = createShader(fadeToTransparentVert,fadeToTransparentFrag);
-        this.randomShader = createShader(randomVert,randomFrag);
-
+        this.updateParticleDataShader = this.p5Ref.createShader(updateParticleDataVert,updateParticleDataFrag);
+        this.updateParticleAgeShader = this.p5Ref.createShader(updateParticleAgeVert,updateParticleAgeFrag);
+        this.drawParticlesShader = this.p5Ref.createShader(drawParticlesVS,drawParticlesFS);
+        this.fadeParticleCanvasShader = this.p5Ref.createShader(fadeToTransparentVert,fadeToTransparentFrag);
+        this.randomShader = this.p5Ref.createShader(randomVert,randomFrag);
         //these two are recompiled every time the flow field is updated, so don't make them yet:
         this.calcFlowFieldShader;
         this.calcFlowMagShader;
 
+
+
         //Texture Buffers
-        this.particleAgeTexture = createFramebuffer({width:dataTextureDimension,height:dataTextureDimension,format:FLOAT,textureFiltering:NEAREST,depth:false});//holds age data
-        this.particleAgeTextureBuffer = createFramebuffer({width:dataTextureDimension,height:dataTextureDimension,format:FLOAT,textureFiltering:NEAREST,depth:false});
-        this.particleDataTexture = createFramebuffer({width:dataTextureDimension,height:dataTextureDimension,format:FLOAT,textureFiltering:NEAREST,depth:false});//holds velocity and position data
-        this.particleDataTextureBuffer = createFramebuffer({width:dataTextureDimension,height:dataTextureDimension,format:FLOAT,textureFiltering:NEAREST,depth:false});
-        this.flowFieldTexture = createFramebuffer({width:this.settings.canvasSize,height:this.settings.canvasSize,format:FLOAT,textureFiltering:NEAREST,depth:false});//holds the flowfield data attraction = (r,g) ; repulsion = (b,a)
-        this.flowMagnitudeTexture = createFramebuffer({width:this.settings.canvasSize,height:this.settings.canvasSize,format:FLOAT,textureFiltering:NEAREST,depth:false});//holds the magnitude of attraction (r) and repulsion (b) forces
-        this.particleMask = createFramebuffer({width:mainCanvas.width,height:mainCanvas.height,depth:false});//holds the particle mask data (white is tracts w/people in them, black is empty tracts)
+        this.particleAgeTexture = this.p5Ref.createFramebuffer({width:settings.dataTextureDimension,height:settings.dataTextureDimension,format:this.p5Ref.FLOAT,textureFiltering:this.p5Ref.NEAREST,depth:false});//holds age data
+        this.particleAgeTextureBuffer = this.p5Ref.createFramebuffer({width:settings.dataTextureDimension,height:settings.dataTextureDimension,format:this.p5Ref.FLOAT,textureFiltering:this.p5Ref.NEAREST,depth:false});
+        this.particleDataTexture = this.p5Ref.createFramebuffer({width:settings.dataTextureDimension,height:settings.dataTextureDimension,format:this.p5Ref.FLOAT,textureFiltering:this.p5Ref.NEAREST,depth:false});//holds velocity and position data
+        this.particleDataTextureBuffer = this.p5Ref.createFramebuffer({width:settings.dataTextureDimension,height:settings.dataTextureDimension,format:this.p5Ref.FLOAT,textureFiltering:this.p5Ref.NEAREST,depth:false});
+        this.flowFieldTexture = this.p5Ref.createFramebuffer({width:settings.canvasSize,height:settings.canvasSize,format:this.p5Ref.FLOAT,textureFiltering:this.p5Ref.NEAREST,depth:false});//holds the flowfield data attraction = (r,g) ; repulsion = (b,a)
+        this.flowMagnitudeTexture = this.p5Ref.createFramebuffer({width:settings.canvasSize,height:settings.canvasSize,format:this.p5Ref.FLOAT,textureFiltering:this.p5Ref.NEAREST,depth:false});//holds the magnitude of attraction (r) and repulsion (b) forces
+        this.particleMask = this.p5Ref.createFramebuffer({width:params.mainCanvas.width,height:params.mainCanvas.height,depth:false});//holds the particle mask data (white is tracts w/people in them, black is empty tracts)
         //not super necessary, but makes it so particles return to their starting position (lets you make seamless looping gifs)
-        this.initialStartingPositions = createFramebuffer({width:dataTextureDimension,height:dataTextureDimension,format:FLOAT,textureFiltering:NEAREST,depth:false});
+        this.initialStartingPositions = this.p5Ref.createFramebuffer({width:settings.dataTextureDimension,height:settings.dataTextureDimension,format:this.p5Ref.FLOAT,textureFiltering:this.p5Ref.NEAREST,depth:false});
 
         //canvases for drawing to
-        this.particleCanvas = createFramebuffer({width:this.settings.canvasSize,height:this.settings.canvasSize,format:FLOAT,depth:false});
-        this.renderFBO = createFramebuffer({width:this.settings.canvasSize,height:this.settings.canvasSize,format:FLOAT,depth:false});
-        this.nodeTexture = createFramebuffer({width:mainCanvas.width,height:mainCanvas.height,textureFiltering:NEAREST,depth:false});//the nodes are drawn to this FBO, so they don't need to be redrawn each frame
+        this.particleCanvas = this.p5Ref.createFramebuffer({width:settings.canvasSize,height:settings.canvasSize,format:this.p5Ref.FLOAT,depth:false});
+        this.renderFBO = this.p5Ref.createFramebuffer({width:settings.canvasSize,height:settings.canvasSize,format:this.p5Ref.FLOAT,depth:false});
+        this.renderFBO_buffer = this.p5Ref.createFramebuffer({width:settings.canvasSize,height:settings.canvasSize,format:this.p5Ref.FLOAT,depth:false});
+        this.nodeTexture = this.p5Ref.createFramebuffer({width:params.mainCanvas.width,height:params.mainCanvas.height,textureFiltering:this.p5Ref.NEAREST,depth:false});//the nodes are drawn to this FBO, so they don't need to be redrawn each frame
+        this.loadNodes(this.presets[0].nodes,settings);
+
+        this.updateFlow(settings);
 
         //get the shader uniform locations so you can pass particle data in
-        this.initGL();
+        this.initGL(settings);
         //move the particle mask to the correct view
         this.updateParticleMask();
         //Initialize particle vel/positions w/ random noise
-        this.resetParticles();
+        this.resetParticles(settings);
     }
-    initGL(){
-        this.drawParticlesProgram = webglUtils.createProgramFromSources(
-            gl, [drawParticlesVS, drawParticlesFS]);
-        this.drawParticlesProgLocs = {
-            id: gl.getAttribLocation(this.drawParticlesProgram, 'particleID'),
-            uPositionTexture: gl.getUniformLocation(this.drawParticlesProgram, 'uPositionTexture'),
-            uColorTexture: gl.getUniformLocation(this.drawParticlesProgram, 'uColorTexture'),
-            uAttractionTexture: gl.getUniformLocation(this.drawParticlesProgram, 'uAttractionTexture'),
-            uRepulsionTexture: gl.getUniformLocation(this.drawParticlesProgram, 'uRepulsionTexture'),
-            uTextureDimensions: gl.getUniformLocation(this.drawParticlesProgram, 'uTextureDimensions'),
-            uMatrix: gl.getUniformLocation(this.drawParticlesProgram, 'uMatrix'),
-        };
-        let ids = new Array(dataTextureDimension*dataTextureDimension).fill(0).map((_, i) => i);
+    initGL(settings){
+        const gl = this.particleCanvas.gl;
+        this.rawParticleShader = this.createRawWebGLProgram(gl,drawParticlesVS,drawParticlesFS);
+        const ids = new Array(settings.dataTextureDimension*settings.dataTextureDimension).fill(0).map((_, i) => i);
         this.idBuffer = gl.createBuffer();
         gl.bindBuffer(gl.ARRAY_BUFFER, this.idBuffer);
         gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(ids), gl.STATIC_DRAW);
+        gl.bindBuffer(gl.ARRAY_BUFFER, null);
     }
     
     //fills a texture/FBO with noise
     fillFBOwithRandom(fbo,scale,seed){
         fbo.begin();
-        shader(this.randomShader);
+        this.p5Ref.shader(this.randomShader);
         this.randomShader.setUniform('uScale',scale);
         this.randomShader.setUniform('uRandomSeed',seed);
-        quad(-1,-1,-1,1,1,1,1,-1);
+        this.p5Ref.quad(-1,-1,-1,1,1,1,1,-1);
         fbo.end();
     }
     //updates the particle mask, the HOLC tract outlines, and the census outlines
     //by translating and scaling their source png's
     updateParticleMask(){
         this.particleMask.begin();
-        background(0);
-        renderTransformedImage(presetFlowMask)
+        this.p5Ref.background(0);
+        this.renderTransformedImage(this.presetFlowMask)
         this.particleMask.end();
     }
-    updateSettings(settings){
-        this.settings = settings;
+    renderTransformedImage(img,sf = this.mainCanvas.width*2/5){
+        const rS = (this.scale.x/sf);//relative scale, bc the png is scaled already
+        const dx = -3*this.mainCanvas.width/4*rS+this.offset.x;
+        const dy = -3*this.mainCanvas.height/4*rS+this.offset.y;
+        /*
+            these ^^ are the condensed versions of: -mainCanvas.width/2*rS+offset.x-mainCanvas.width/4*rS
+            Which is basically centering the image on the webGL canvas, scaling that centering by the image scale
+            Adding the offset, then subtracting the starting offset (bc the png is already offset)
+        */
+        const dw = (this.mainCanvas.width)*rS;
+        const dh = (this.mainCanvas.height)*rS;
+        const sx = 0;
+        const sy = 0;
+        const sw = img.width;
+        const sh = img.height;
+        this.p5Ref.image(img,dx,dy,dw,dh,
+                sx,sy,sw,sh);
     }
-    renderNodes(){
+    renderNodes(settings){
         this.nodeTexture.begin();
-        clear();
+        this.p5Ref.clear();
         let trueMin = this.nodes[0].strength;
         let trueMax = this.nodes[this.nodes.length-1].strength;
         for(let node of this.nodes){
-            const x = node.x*scale.x+offset.x;
-            const y = -node.y*scale.x+offset.y;
-            const force = map(node.strength,trueMin+0.3,trueMax-0.3,0,5);
+            const x = node.x*this.scale.x+this.offset.x;
+            const y = -node.y*this.scale.x+this.offset.y;
+            const force = this.p5Ref.map(node.strength,trueMin+0.3,trueMax-0.3,0,5);
             // if(force<2)
             //     continue;
-            let temp = map(node.strength,trueMin+0.3,trueMax-0.3,0,1);
-            fill(lerpColor(this.settings.repulsionColor,this.settings.attractionColor,temp));
-            noStroke();
-            ellipse(x,y,force,force);
+            let temp = this.p5Ref.map(node.strength,trueMin+0.3,trueMax-0.3,0,1);
+            this.p5Ref.fill(this.p5Ref.lerpColor(this.p5Ref.color(settings.repulsionColor),this.p5Ref.color(settings.attractionColor),temp));
+            this.p5Ref.ellipse(x,y,force,force);
         }
         this.nodeTexture.end();
     }
-    loadNodes(nodes){
+    loadNodes(nodes,settings){
         //sort nodes by strength
         nodes.sort((a,b) => {
             if(a.strength>b.strength)
@@ -127,7 +157,7 @@ class FlowField{
             if(this.NUMBER_OF_REPULSORS>=500)
                 break;
             let strength = nodes[i].strength;
-            let s = map(strength,mostNegative,mostPositive,0.0,1.0);
+            let s = this.p5Ref.map(strength,mostNegative,mostPositive,0.0,1.0);
             if(strength >= 0){
                 break;
             }
@@ -141,7 +171,7 @@ class FlowField{
             if(this.NUMBER_OF_ATTRACTORS>=500)
                 break;
             let strength = nodes[i].strength;
-            let s = map(strength,mostNegative,mostPositive,0.0,1.0);
+            let s = this.p5Ref.map(strength,mostNegative,mostPositive,0.0,1.0);
             if(strength <= 0){
                 break;
             }
@@ -150,94 +180,80 @@ class FlowField{
             this.attractorArray.push(s);
             this.NUMBER_OF_ATTRACTORS++;
         }
-        this.updateFlow();
-        this.renderNodes();
+        this.renderNodes(settings);
     }
-    clear(){
-        this.renderFBO.begin();
-        clear();
-        this.renderFBO.end();
-        this.particleCanvas.begin();
-        clear();
-        this.particleCanvas.end();
-    }
-    updateFlow(){
+    updateFlow(settings){
         const newShader = createFlowFieldShader(this.NUMBER_OF_ATTRACTORS,this.NUMBER_OF_REPULSORS);
-        this.calcFlowFieldShader = createShader(newShader.vertexShader,newShader.fragmentShader);
+        this.calcFlowFieldShader = this.p5Ref.createShader(newShader.vertexShader,newShader.fragmentShader);
         //ANY drawing to this texture will affect the flow field data
         //Flow field data is stored as attractors(x,y) => r,g; repulsors(x,y) => b,a;
         this.flowFieldTexture.begin();
-        noStroke();
-        clear();
-        shader(this.calcFlowFieldShader);
+        this.p5Ref.clear();
+        this.p5Ref.shader(this.calcFlowFieldShader);
         //just a note: attractors and repulsors are FLAT arrays of x,y,strength values
         //Which means they're just a 1x(nx3) flat vector, not an nx3 multidimensional vector
-        this.calcFlowFieldShader.setUniform('uCoordinateOffset',[offset.x/mainCanvas.width+0.5,offset.y/mainCanvas.height+0.5]);//adjusting coordinate so they're between 0,1 (instead of -width/2,+width/2)
-        this.calcFlowFieldShader.setUniform('uScale',scale.x);
-        this.calcFlowFieldShader.setUniform('uDimensions',mainCanvas.width);
+        this.calcFlowFieldShader.setUniform('uCoordinateOffset',[this.offset.x/this.mainCanvas.width+0.5,this.offset.y/this.mainCanvas.height+0.5]);//adjusting coordinate so they're between 0,1 (instead of -width/2,+width/2)
+        this.calcFlowFieldShader.setUniform('uScale',this.scale.x);
+        this.calcFlowFieldShader.setUniform('uDimensions',this.mainCanvas.width);
         this.calcFlowFieldShader.setUniform('uAttractors',this.attractorArray);
         this.calcFlowFieldShader.setUniform('uRepulsors',this.repulsorArray);
-        this.calcFlowFieldShader.setUniform('uAttractionStrength',this.settings.attractionStrength);
-        this.calcFlowFieldShader.setUniform('uRepulsionStrength',this.settings.repulsionStrength);
         this.calcFlowFieldShader.setUniform('uClipAlphaChannel',false);
-        rect(-this.flowFieldTexture.width/2,-this.flowFieldTexture.height/2,this.flowFieldTexture.width,this.flowFieldTexture.height);
+        this.p5Ref.rect(-this.flowFieldTexture.width/2,-this.flowFieldTexture.height/2,this.flowFieldTexture.width,this.flowFieldTexture.height);
         this.flowFieldTexture.end();
-        this.updateFlowMagnitude();
+        this.updateFlowMagnitude(settings);
     }
-    updateFlowMagnitude(){
+    updateFlowMagnitude(settings){
         const newShader = createFlowMagnitudeShader(this.NUMBER_OF_ATTRACTORS,this.NUMBER_OF_REPULSORS);
-        this.calcFlowMagShader = createShader(newShader.vertexShader,newShader.fragmentShader);
+        this.calcFlowMagShader = this.p5Ref.createShader(newShader.vertexShader,newShader.fragmentShader);
         this.flowMagnitudeTexture.begin();
-        noStroke();
-        shader(this.calcFlowMagShader);
-        clear();
+        this.p5Ref.shader(this.calcFlowMagShader);
+        this.p5Ref.clear();
         //just a note: attractors and repulsors are FLAT arrays of x,y,strength values
         //Which means they're just a 1x(nx3) flat vector, not an nx3 multidimensional vector
-        this.calcFlowMagShader.setUniform('uCoordinateOffset',[offset.x/mainCanvas.width+0.5,offset.y/mainCanvas.height+0.5]);//adjusting coordinate so they're between 0,1 (instead of -width/2,+width/2)
-        this.calcFlowMagShader.setUniform('uScale',scale.x);
-        this.calcFlowMagShader.setUniform('uDimensions',mainCanvas.width);
+        this.calcFlowMagShader.setUniform('uCoordinateOffset',[this.offset.x/this.mainCanvas.width+0.5,this.offset.y/this.mainCanvas.height+0.5]);//adjusting coordinate so they're between 0,1 (instead of -width/2,+width/2)
+        this.calcFlowMagShader.setUniform('uScale',this.scale.x);
+        this.calcFlowMagShader.setUniform('uDimensions',this.mainCanvas.width);
         this.calcFlowMagShader.setUniform('uAttractors',this.attractorArray);
         this.calcFlowMagShader.setUniform('uRepulsors',this.repulsorArray);
-        this.calcFlowMagShader.setUniform('uAttractionStrength',this.settings.attractionStrength);
-        this.calcFlowMagShader.setUniform('uRepulsionStrength',this.settings.repulsionStrength);
-        rect(-this.flowMagnitudeTexture.width/2,-this.flowMagnitudeTexture.height/2,this.flowMagnitudeTexture.width,this.flowMagnitudeTexture.height);
+        this.p5Ref.rect(-this.flowMagnitudeTexture.width/2,-this.flowMagnitudeTexture.height/2,this.flowMagnitudeTexture.width,this.flowMagnitudeTexture.height);
         this.flowMagnitudeTexture.end();
     }
-    updateParticleData(){
+    updateParticleData(settings){
         this.particleDataTextureBuffer.begin();
-        clear();
-        shader(this.updateParticleDataShader);
+        this.p5Ref.clear();
+        this.p5Ref.shader(this.updateParticleDataShader);
+        this.updateParticleDataShader.setUniform('uAttractionStrength',settings.attractionStrength);
+        this.updateParticleDataShader.setUniform('uRepulsionStrength',settings.repulsionStrength);
         this.updateParticleDataShader.setUniform('uParticleVelTexture',this.velTexture);
         this.updateParticleDataShader.setUniform('uFlowFieldTexture',this.flowFieldTexture);
         this.updateParticleDataShader.setUniform('uParticlePosTexture',this.particleDataTexture);
-        this.updateParticleDataShader.setUniform('uDamp',this.settings.particleVelocity/10.0);
-        this.updateParticleDataShader.setUniform('uRandomScale',this.settings.randomMagnitude);
-        this.updateParticleDataShader.setUniform('uMouseInteraction',this.settings.mouseInteraction);
-        this.updateParticleDataShader.setUniform('uMousePosition',[mouseX/width,mouseY/height]);
-        this.updateParticleDataShader.setUniform('uTime',(frameCount%(this.settings.framesBeforeLoop+1)));//this is also the amount of time the sim will take to loop
+        this.updateParticleDataShader.setUniform('uDamp',settings.particleVelocity/10.0);
+        this.updateParticleDataShader.setUniform('uRandomScale',settings.randomMagnitude);
+        this.updateParticleDataShader.setUniform('uMouseInteraction',settings.mouseInteraction);
+        this.updateParticleDataShader.setUniform('uMousePosition',[this.p5Ref.mouseX/this.p5Ref.width,this.p5Ref.mouseY/this.p5Ref.height]);
+        this.updateParticleDataShader.setUniform('uTime',(this.p5Ref.frameCount%(settings.framesBeforeLoop+1)));//this is also the amount of time the sim will take to loop
         this.updateParticleDataShader.setUniform('uInitialData',this.initialStartingPositions);
-        this.updateParticleDataShader.setUniform('uAgeLimit',this.settings.particleAgeLimit);
+        this.updateParticleDataShader.setUniform('uAgeLimit',settings.particleAgeLimit);
         this.updateParticleDataShader.setUniform('uParticleAgeTexture',this.particleAgeTexture);
         this.updateParticleDataShader.setUniform('uParticleTrailTexture',this.particleCanvas);
         this.updateParticleDataShader.setUniform('uParticleMask',this.particleMask);
-        this.updateParticleDataShader.setUniform('uUseMaskTexture',this.settings.useParticleMask);
-        this.updateParticleDataShader.setUniform('uFlowInfluence',this.settings.flowInfluence);
-        quad(-1,-1,1,-1,1,1,-1,1);
+        this.updateParticleDataShader.setUniform('uUseMaskTexture',settings.useParticleMask);
+        this.updateParticleDataShader.setUniform('uFlowInfluence',settings.flowInfluence);
+        this.p5Ref.quad(-1,-1,1,-1,1,1,-1,1);
         this.particleDataTextureBuffer.end();
         [this.particleDataTexture,this.particleDataTextureBuffer] = [this.particleDataTextureBuffer,this.particleDataTexture];
     }
-    updateParticleAges(){
+    updateParticleAges(settings){
         this.particleAgeTextureBuffer.begin();
-        shader(this.updateParticleAgeShader);
-        this.updateParticleAgeShader.setUniform('uAgeLimit',this.settings.particleAgeLimit);
-        this.updateParticleAgeShader.setUniform('uAgeIncrement',this.settings.particleAgeLimit/this.settings.framesBeforeLoop);
+        this.p5Ref.shader(this.updateParticleAgeShader);
+        this.updateParticleAgeShader.setUniform('uAgeLimit',settings.particleAgeLimit);
+        this.updateParticleAgeShader.setUniform('uAgeIncrement',settings.particleAgeLimit/settings.framesBeforeLoop);
         this.updateParticleAgeShader.setUniform('uAgeTexture',this.particleAgeTexture);
-        quad(-1,-1,1,-1,1,1,-1,1);
+        this.p5Ref.quad(-1,-1,1,-1,1,1,-1,1);
         this.particleAgeTextureBuffer.end();
         [this.particleAgeTexture,this.particleAgeTextureBuffer] = [this.particleAgeTextureBuffer,this.particleAgeTexture];
     }
-    resetParticles(){
-
+    resetParticles(settings){
         this.fillFBOwithRandom(this.initialStartingPositions,1.0,1.1);
 
         let r = 1.1;
@@ -245,96 +261,147 @@ class FlowField{
         this.fillFBOwithRandom(this.particleDataTextureBuffer,1.0,r);
 
         let r1 = 1;
-        this.fillFBOwithRandom(this.particleAgeTexture,this.settings.particleAgeLimit,r1);
-        this.fillFBOwithRandom(this.particleAgeTextureBuffer,this.settings.particleAgeLimit,r1);
+        this.fillFBOwithRandom(this.particleAgeTexture,settings.particleAgeLimit,r1);
+        this.fillFBOwithRandom(this.particleAgeTextureBuffer,settings.particleAgeLimit,r1);
     }
-    renderGL(){
-        //using webGL to draw each particle as a point
-        this.particleCanvas.begin();
+    createRawWebGLProgram(gl, vsSource, fsSource) {
+        const vertShader = gl.createShader(gl.VERTEX_SHADER);
+        gl.shaderSource(vertShader, vsSource);
+        gl.compileShader(vertShader);
+        if (!gl.getShaderParameter(vertShader, gl.COMPILE_STATUS)) {
+            console.error('Vertex shader error:', gl.getShaderInfoLog(vertShader));
+            return null;
+        }
 
-        //setting ID attributes (or trying to at least)
+        const fragShader = gl.createShader(gl.FRAGMENT_SHADER);
+        gl.shaderSource(fragShader, fsSource);
+        gl.compileShader(fragShader);
+        if (!gl.getShaderParameter(fragShader, gl.COMPILE_STATUS)) {
+            console.error('Fragment shader error:', gl.getShaderInfoLog(fragShader));
+            return null;
+        }
+
+        const program = gl.createProgram();
+        gl.attachShader(program, vertShader);
+        gl.attachShader(program, fragShader);
+        gl.linkProgram(program);
+
+        if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
+            console.error('Program link error:', gl.getProgramInfoLog(program));
+            return null;
+        }
+
+        return program;
+    }
+
+    renderParticles(settings){
+
+        const shader = this.rawParticleShader;
+        const repColor = new Float32Array([settings.repulsionColor[0]/255.0,settings.repulsionColor[1]/255.0,settings.repulsionColor[2]/255.0,1.0]);
+        const attColor = new Float32Array([settings.attractionColor[0]/255.0,settings.attractionColor[1]/255.0,settings.attractionColor[2]/255.0,1.0]);
+        const gl = this.particleCanvas.gl;
+        
+        gl.useProgram(shader);
+
+        //tell webgl to draw to the particle canvas 
+        gl.bindFramebuffer(gl.FRAMEBUFFER,this.particleCanvas.framebuffer);
+        //set the viewport
+
+        //setting ID attributes
         gl.bindBuffer(gl.ARRAY_BUFFER, this.idBuffer);
-        gl.enableVertexAttribArray(this.drawParticlesProgLocs.id);
+
+        //clear out old data
+        gl.clearColor(0.0, 0.0, 0.0, 0.0); // RGBA
+        gl.clear(gl.COLOR_BUFFER_BIT);
+
+        gl.enableVertexAttribArray(gl.getAttribLocation(this.rawParticleShader, 'particleID'));
         gl.vertexAttribPointer(
-            this.drawParticlesProgLocs.id,
+            gl.getAttribLocation(this.rawParticleShader, 'particleID'),
             1,         // size (num components)
             gl.FLOAT,  // type of data in buffer
             false,     // normalize
             0,         // stride (0 = auto)
             0,         // offset
         );
-        //setting the texture samples (this was what was fucked up! you need to set the active texture, then bind it)
+
+
+        //binding textures
         gl.activeTexture(gl.TEXTURE0);
         gl.bindTexture(gl.TEXTURE_2D, this.particleDataTexture.colorTexture);
+        
         gl.activeTexture(gl.TEXTURE1);
+        // gl.bindTexture(gl.TEXTURE_2D, this.flowFieldTexture.colorTexture);
         gl.bindTexture(gl.TEXTURE_2D, this.flowMagnitudeTexture.colorTexture);
-        gl.activeTexture(gl.TEXTURE2);
-        gl.bindTexture(gl.TEXTURE_2D, this.particleAgeTexture.colorTexture);
 
-        //running the particle-drawing shader
-        shader(this.drawParticlesShader);
-        this.drawParticlesShader.setUniform('uDataTexture',this.particleDataTexture);
-        this.drawParticlesShader.setUniform('uColorTexture',this.flowMagnitudeTexture);
-        this.drawParticlesShader.setUniform('uAgeTexture',this.particleAgeTexture);
-        this.drawParticlesShader.setUniform('uColorWeight',this.settings.colorWeight);
-        this.drawParticlesShader.setUniform('uRepulsionColor',[this.settings.repulsionColor._array[0],this.settings.repulsionColor._array[1],this.settings.repulsionColor._array[2],1.0]);
-        this.drawParticlesShader.setUniform('uAttractionColor',[this.settings.attractionColor._array[0],this.settings.attractionColor._array[1],this.settings.attractionColor._array[2],1.0]);
-        this.drawParticlesShader.setUniform('uTextureDimensions',[dataTextureDimension,dataTextureDimension]);
-        this.drawParticlesShader.setUniform('uParticleSize',this.settings.particleSize);
-        gl.drawArrays(gl.POINTS,0,this.settings.particleCount);
-        this.particleCanvas.end();
+        gl.uniform1i(gl.getUniformLocation(shader,'uDataTexture'),0);
+        gl.uniform1i(gl.getUniformLocation(shader,'uColorTexture'),1);
 
-        //rendering the particles
+        //setting other uniforms
+        gl.uniform4fv(gl.getUniformLocation(shader,'uRepulsionColor'),repColor);
+        gl.uniform4fv(gl.getUniformLocation(shader,'uAttractionColor'),attColor);
+        gl.uniform1f(gl.getUniformLocation(shader,'uAttractionStrength'),settings.attractionStrength);
+        gl.uniform1f(gl.getUniformLocation(shader,'uRepulsionStrength'),settings.repulsionStrength);
+        gl.uniform1f(gl.getUniformLocation(shader,'uColorWeight'),settings.colorWeight);
+        gl.uniform1f(gl.getUniformLocation(shader,'uParticleSize'),settings.particleSize);
+        gl.uniform2fv(gl.getUniformLocation(shader,'uTextureDimensions'),new Float32Array([settings.dataTextureDimension,settings.dataTextureDimension]));
+
+        //rendering
+        gl.drawArrays(gl.POINTS,0,settings.particleCount);
+        gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+
+        //fading particle trails
         this.renderFBO.begin();
-        noStroke();
-        clear();//clear out the old image (bc you're about to read from the other canvas)
-        shader(this.fadeParticleCanvasShader);
+        this.p5Ref.clear();//clear out the old image (bc you're about to read from the other canvas)
+        this.p5Ref.shader(this.fadeParticleCanvasShader);
+        this.fadeParticleCanvasShader.setUniform('uThisCanvas',this.renderFBO_buffer);
         this.fadeParticleCanvasShader.setUniform('uSourceImage',this.particleCanvas);
-        this.fadeParticleCanvasShader.setUniform('uFadeAmount',this.settings.trailDecayValue);
-        quad(-1,-1,1,-1,1,1,-1,1);
+        this.fadeParticleCanvasShader.setUniform('uFadeAmount',1.0-settings.trailDecayValue);
+        this.p5Ref.quad(-1,-1,1,-1,1,1,-1,1);
         this.renderFBO.end();
 
         //swap the particle FBO and the rendering FBO
-        [this.particleCanvas,this.renderFBO] = [this.renderFBO,this.particleCanvas];
+        // [this.particleCanvas,this.renderFBO] = [this.renderFBO,this.particleCanvas];
+        [this.renderFBO_buffer,this.renderFBO] = [this.renderFBO,this.renderFBO_buffer];
         //draw the render FBO to the canvas
-        image(this.renderFBO,-mainCanvas.width/2,-mainCanvas.height/2,mainCanvas.width,mainCanvas.height);
+        this.p5Ref.image(this.renderFBO,-this.mainCanvas.width/2,-this.mainCanvas.height/2,this.mainCanvas.width,this.mainCanvas.height);
     }
-    renderData(){
+    renderData(settings){
         const yStart = -height/2;
-        noStroke();
-        fill(0,0,0);
-        rect(-width/2,yStart,this.settings.dataSize,2*this.settings.dataSize);
-        fill(0,100,255);
-        rect(-width/2,yStart+this.settings.dataSize*2,this.settings.dataSize,this.settings.dataSize)
-        image(this.flowFieldTexture,-width/2,yStart,this.settings.dataSize,this.settings.dataSize);
-        image(this.flowMagnitudeTexture,-width/2,yStart+1*this.settings.dataSize,this.settings.dataSize,this.settings.dataSize);
-        image(this.particleDataTexture,-width/2,yStart+2*this.settings.dataSize,this.settings.dataSize,this.settings.dataSize);
+        this.p5Ref.fill(0,0,0);
+        this.p5Ref.rect(-width/2,yStart,settings.dataSize,2*settings.dataSize);
+        this.p5Ref.fill(0,100,255);
+        this.p5Ref.rect(-width/2,yStart+settings.dataSize*2,settings.dataSize,settings.dataSize)
+        this.p5Ref.image(this.flowFieldTexture,-width/2,yStart,settings.dataSize,settings.dataSize);
+        this.p5Ref.image(this.flowMagnitudeTexture,-width/2,yStart+1*settings.dataSize,settings.dataSize,settings.dataSize);
+        this.p5Ref.image(this.particleDataTexture,-width/2,yStart+2*settings.dataSize,settings.dataSize,settings.dataSize);
     }
-    render(){
-        background(this.settings.backgroundColor);
-        if(this.settings.renderCensusTracts)
-            renderTransformedImage(tractOutlines);
-        if(this.settings.renderHOLCTracts)
-            renderTransformedImage(holcTexture);
-        if(this.settings.renderNodes)
-            image(this.nodeTexture,-width/2,-height/2,width,height);
-        if(this.settings.renderBigFlowField){
-            background(0);
-            image(this.flowFieldTexture,-width/2,-height/2,width,height);
+    render(settings){
+        this.p5Ref.background(settings.backgroundColor);
+        if(settings.renderCensusTracts)
+            this.renderTransformedImage(this.tractOutlines);
+        if(settings.renderHOLCTracts)
+            this.renderTransformedImage(this.holcTexture);
+        if(settings.renderNodes)
+           this.p5Ref.image(this.nodeTexture,-this.p5Ref.width/2,-this.p5Ref.height/2,this.p5Ref.width,this.p5Ref.height);
+        if(settings.renderBigFlowField){
+            this.p5Ref.background(0);
+            this.p5Ref.image(this.flowFieldTexture,-this.p5Ref.width/2,-this.p5Ref.height/2,this.p5Ref.width,this.p5Ref.height);
         }
-        if(this.settings.renderParticles)
-            this.renderGL();
-        if(this.settings.renderFlowFieldDataTexture)
-            this.renderData();
+        this.p5Ref.image(this.flowMagnitudeTexture,-this.p5Ref.width/2,-this.p5Ref.height/2,this.p5Ref.width,this.p5Ref.height);
+        if(settings.renderParticles)
+            this.renderParticles(settings);
+        if(settings.renderFlowFieldDataTexture)
+            this.renderData(settings);
+
     }
-    updateParticles(){
-        this.updateParticleData();
-        this.updateParticleAges();
+    updateParticles(settings){
+        this.updateParticleData(settings);
+        this.updateParticleAges(settings);
     }
-    run(){
-        if(this.settings.isActive){
-            this.updateParticles();
-            this.render();
+    run(settings){
+        if(settings.isActive){
+            this.updateParticles(settings);
+            this.render(settings);
         }
     }
 }

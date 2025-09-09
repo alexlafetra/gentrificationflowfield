@@ -378,7 +378,6 @@ function setupMapData(){
 function setView(x,y,s){
     scale = {x:s,y:-s};
     offset = {x:x,y:y};
-    flowField.flowField.clear();
     flowField.flowField.updateParticleMask();
     flowField.flowField.updateFlow();
 }

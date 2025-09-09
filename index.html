@@ -1,123 +1,14 @@
-<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-  <!-- OK, YOU CAN MAKE CHANGES BELOW THIS LINE AGAIN -->
-
-  <style>
-    html{
-      height:100%;
-      /* background-color: black; */
-      /* overflow:hidden; */
-    }
-    body {
-      height:100%;
-      padding: 0;
-    }
-    #gui{
-      height:fit-content;
-      display:flex;
-      flex-direction:column;
-      position:relative;
-      /* background-color: white; */
-      padding:20px;
-      transition:0.5s;
-      font-family:'Times New Roman', Times, serif;
-      color:rgb(60,60,60);
-      justify-items: right;
-    }
-    canvas{
-      margin:auto;
-      display:block;
-      width:auto;
-    }
-    #mainGraph{
-      margin:auto;
-      /* text-align: center; */
-    }
-    .chart_title{
-      font-family: Arial, Helvetica, sans-serif;
-      font-size:34px;
-      font-weight:bolder;
-      color:black;
-    }
-    .chart_title_small{
-      font-family: Arial, Helvetica, sans-serif;
-      font-size:14px;
-      font-weight:bolder;
-      font-style:italic;
-      color:black;
-      width:100%;
-    }
-    .chart_equation{
-      font-family:'Times New Roman', Times, serif;
-      text-align:left;
-      font-style:italic;
-      font-size:16px;
-      color:black;
-    }
-    .chart_equation_small{
-      font-family:'Times New Roman', Times, serif;
-      text-align:left;
-      font-style:italic;
-      font-size:12px;
-      color:black;
-    }
-
-    .gui_button{
-      width:fit-content;
-    }
-    .gui_select{
-      width:fit-content;
-    }
-    .title{
-      font-family: Arial, Helvetica, sans-serif;
-      font-size:34px;
-      font-weight:bolder;
-      color:rgb(50,50,50);
-    }
-    #abstract{
-      width:100%;
-      display:block;
-      margin:auto;
-      font-family: Arial, Helvetica, sans-serif;
-      font-size:20px;
-    }
-  </style>
-</head>
-
-<body>
-  <div style = "width:100%; max-width:1000px;margin:auto; display:block;padding-top:70px;">
-    <div id = "app" style = "display:flex;">
-      <div id = "mainGraph">
-        <div id = "chartTitle" class = "chart_title"></div>
-        <div id = "chartEquation" class = "chart_equation"></div>
-        <main></main>
-      </div>
-      <div id = "gui">
-        <!-- <img src = "data/Prerendered/render_animated.gif" width = "300px;" height = "300px;"> -->
-      </div>
-    </div>
-    <div id = "abstract">
-      This is an experimental tool for visualizing changes in population data between census years, specifically to understand
-      the interconnectedness & severity of the displacement of different racial groups in the bay in contrast to the migration of white
-      residents. You can find out more about this project at the [github page](https://github.com/alexlafetra/gentrificationflowfield). 
-    </div>
-  </div>
-
-</body>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.7.1/jszip.min.js"></script>
-  <script language="javascript" type="text/javascript" src="libraries/p5.min.js"></script>
-  <script language="javascript" type="text/javascript" src="libraries/webgl-utils.js"></script>
-  <script language="javascript" type="text/javascript" src="src/presetData.js"></script>
-  <script language="javascript" type="text/javascript" src="src/stats.js"></script>
-  <script language="javascript" type="text/javascript" src="src/gui.js"></script>
-  <script language="javascript" type="text/javascript" src="src/censusTractConversion.js"></script>
-  <script language="javascript" type="text/javascript" src="src/mapping.js"></script>
-  <script language="javascript" type="text/javascript" src="src/flowField.js"></script>
-  <script language="javascript" type="text/javascript" src="src/app.js"></script>
-  <script language="javascript" type="text/javascript" src="src/main.js"></script>
-  <script language="javascript" type="text/javascript" src="src/shaders.js"></script>
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/icon.png" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>gentrificationflowfield</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
 </html>
+
