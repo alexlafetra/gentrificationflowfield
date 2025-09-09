@@ -16,6 +16,7 @@ import { createPremadePresets } from './stats.js';
 import { CensusDataFlowField } from './app.js';
 import { FlowField } from "./flowField";
 import { viewPresets } from "./main";
+import Dropdown from './components/dropdown.jsx';
 
 
 function App() {
@@ -23,11 +24,11 @@ function App() {
   const flowField = useRef();
   const [UISettings,setUISettings] = useState({
     devMode : false,
-    dataTextureDimension : 100,
+    dataTextureDimension : 200,
     backgroundColor : [255,255,255],
-    particleCount : 10000,
+    particleCount : 40000,
     trailDecayValue : 0.04,
-    particleSize : 1.4,
+    particleSize : 1.6,
     particleAgeLimit : 1,
     framesBeforeLoop : 60,
     particleVelocity : 0.01,
@@ -35,7 +36,7 @@ function App() {
     randomMagnitude : 0.0,
     repulsionStrength : 0.8,
     attractionStrength : 0.5,
-    canvasSize : 400,
+    canvasSize : 600,
     useParticleMask : true, //for preventing particles from entering oceans
     isActive : true,
     renderFlowFieldDataTexture : false,
@@ -46,8 +47,10 @@ function App() {
     repulsionColor : [20,0,180],
     attractionColor : [255,0,120],
     mouseInteraction : false,
-    colorWeight: 1.6,
+    colorWeight: 0.5,
   });
+
+  const dragStart = useRef({x:0,y:0});
   const UISettingsRef = useRef(UISettings);
   useEffect(() => {
     UISettingsRef.current = UISettings;
@@ -67,6 +70,10 @@ function App() {
       x: 0,
       y: 0
     },
+    dragOffset : {
+      x:0,
+      y:0
+    },
     geoOffset : {
       x: 0,
       y: 0
@@ -79,8 +86,14 @@ function App() {
     presetFlowMask : null,
     tractOutlines : null,
     holcTexture : null,
-    p5Ref : null
+    p5Ref : null,
+    currentPreset : 0,
+    viewPresets : viewPresets,
+    currentViewPreset : 0
   });
+
+  const [currentDataPresetTitle,setCurrentDataPresetTitle] = useState(simulationParams.current.presets[simulationParams.current.currentPreset].title);
+  const [currentViewPresetTitle,setCurrentViewPresetTitle] = useState(simulationParams.current.viewPresets[simulationParams.current.currentViewPreset].name);
 
   //P5 sketch body
   const mainSketch = (p) =>{
@@ -110,12 +123,27 @@ function App() {
       simulationParams.current.offset = {x:simulationParams.current.mainCanvas.width/4,y:simulationParams.current.mainCanvas.height/4};
       let s = simulationParams.current.mainCanvas.width*2/5;
       simulationParams.current.scale = {x:s,y:s*(-1)};//manually adjusting the scale to taste
-      flowField.current = new FlowField(UISettingsRef.current,simulationParams.current);
+      flowField.current = new FlowField(UISettingsRef.current,simulationParams);
     }
-    p.draw = () =>{
+    p.draw = () => {
       flowField.current.run(UISettingsRef.current);
     }
-    
+    // p.mouseClicked = () => {
+    //   simulationParams.current.dragOffset = {x:p.mouseX-simulationParams.current.offset.x,y:p.mouseY-simulationParams.current.offset.y};
+    //   dragStart.current = {x:simulationParams.current.offset.x,y:simulationParams.current.offset.y};
+    // }
+    // p.mouseDragged = () => {
+    //   simulationParams.current.offset = {
+    //     x: dragStart.current.x + p.mouseX - simulationParams.current.dragOffset.x,
+    //     y: dragStart.current.y + p.mouseY - simulationParams.current.dragOffset.y
+    //   };
+    // }
+    // p.mouseWheel = (e) => {
+    //   simulationParams.current.scale = {
+    //     x: simulationParams.current.scale.x * ((e.delta < 0)?1.01:0.99),
+    //     y: simulationParams.current.scale.y * ((e.delta < 0)?1.01:0.99),
+    //   };
+    // }
     return () => {
       p.remove();
     }
@@ -125,10 +153,23 @@ function App() {
     <div className = "ui_container">
       <Slider label = 'Particles' min = {0} max = {UISettings.dataTextureDimension*UISettings.dataTextureDimension} stepsize = {1} value = {UISettings.particleCount} callback = {(val) => {setUISettings({...UISettings,particleCount:val})}}></Slider>
       <Slider label = 'Size' min = {0.1} max = {5} stepsize = {0.01} value = {UISettings.particleSize} callback = {(val) => {setUISettings({...UISettings,particleSize:val})}}></Slider>
-      <Slider label = 'Velocity' min = {0} max = {0.01} stepsize = {0.001} value = {UISettings.particleVelocity} callback = {(val) => {setUISettings({...UISettings,particleVelocity:val})}}></Slider>
-      <Slider label = 'Repulsion' min = {0} max = {10} stepsize = {0.01} value = {UISettings.repulsionStrength} callback = {(val) => {setUISettings({...UISettings,repulsionStrength:val})}}></Slider>
-      <Slider label = 'Attraction' min = {0} max = {10} stepsize = {0.01} value = {UISettings.attractionStrength} callback = {(val) => {setUISettings({...UISettings,attractionStrength:val})}}></Slider>
       <Slider label = 'Decay' min = {0.1} max = {1.0} stepsize = {0.01} value = {UISettings.trailDecayValue} callback = {(val) => {setUISettings({...UISettings,trailDecayValue:(val)})}}></Slider>
+      <Slider label = 'Velocity' min = {0} max = {0.01} stepsize = {0.001} value = {UISettings.particleVelocity} callback = {(val) => {setUISettings({...UISettings,particleVelocity:val})}}></Slider>
+      <Slider label = 'Repulsion' min = {0} max = {5} stepsize = {0.01} value = {UISettings.repulsionStrength} callback = {(val) => {setUISettings({...UISettings,repulsionStrength:val})}}></Slider>
+      <Slider label = 'Attraction' min = {0} max = {5} stepsize = {0.01} value = {UISettings.attractionStrength} callback = {(val) => {setUISettings({...UISettings,attractionStrength:val})}}></Slider>
+      <Slider label = 'Color Balance' min = {0.01} max = {0.6} stepsize = {0.01} value = {UISettings.colorWeight} callback = {(val) => {setUISettings({...UISettings,colorWeight:(val)})}}></Slider>
+      <Dropdown label = 'Source Data' callback = {(val) => {
+        setCurrentDataPresetTitle(val);
+        simulationParams.current.currentPreset = simulationParams.current.presets.findIndex(preset => preset.title === val);
+        flowField.current.loadNodes(simulationParams.current.presets[simulationParams.current.currentPreset].nodes,UISettingsRef.current);
+        flowField.current.updateFlow(UISettingsRef.current);
+      }} value = {currentDataPresetTitle} options = {simulationParams.current.presets.map((preset) => preset.title)}></Dropdown>
+      <Dropdown label = 'Set View' callback = {(val) => {
+        setCurrentViewPresetTitle(val);
+        simulationParams.current.currentViewPreset = simulationParams.current.viewPresets.findIndex(preset => preset.name === val);
+        simulationParams.current.offset = {x:simulationParams.current.viewPresets[simulationParams.current.currentViewPreset].x,y:simulationParams.current.viewPresets[simulationParams.current.currentViewPreset].y};
+        simulationParams.current.scale = {x:simulationParams.current.viewPresets[simulationParams.current.currentViewPreset].scale,y:simulationParams.current.viewPresets[simulationParams.current.currentViewPreset].scale};
+      }} value = {currentViewPresetTitle} options = {simulationParams.current.viewPresets.map((preset) => preset.name)}></Dropdown>
     </div>
   )
 }

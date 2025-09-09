@@ -9,7 +9,6 @@ function Slider({label,callback,min,max,stepsize,value}){
     }
 
     const labelStyle = {
-        fontFamily:"'Times New Roman', Times, serif",
         pointerEvents:'none',
         zIndex:1,
         color:'#000000',

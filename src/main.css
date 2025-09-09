@@ -3,7 +3,16 @@ html{
     height:100%;
 }
 
-canvas{
+.p5Canvas{
     image-rendering: pixelated;
     image-rendering: crisp-edges;
+    margin:auto;
+    display:block;
+}
+
+.ui_container{
+    font-family: monospace;
+    display:flex;
+    float:left;
+    flex-direction: column;
 }

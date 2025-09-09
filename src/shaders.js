@@ -33,18 +33,19 @@ export const fadeToTransparentFrag = ``+glsl`
 
     uniform float uFadeAmount; //a percentage/decimal number that the alpha value is multiplied by
     uniform sampler2D uSourceImage;
-    uniform sampler2D uThisCanvas;
+    uniform sampler2D uOverlayImage;
 
     varying vec2 vTexCoord;
 
     void main(){
-        vec4 currentColor = texture2D(uThisCanvas,vTexCoord);
-        currentColor.a -= uFadeAmount;
-        currentColor += texture2D(uSourceImage,vTexCoord);
-        if(currentColor.a < 0.01){
+        vec4 currentColor = texture2D(uSourceImage,vTexCoord);
+        vec4 overlayColor = texture2D(uOverlayImage,vTexCoord);
+        currentColor.a *= uFadeAmount;
+        vec4 finalColor = currentColor * (1.0 - overlayColor.a) + overlayColor;
+        if(finalColor.a < 0.01){
             discard;
         }
-        gl_FragColor = currentColor;
+        gl_FragColor = finalColor;
     }
 `;
 
@@ -280,6 +281,8 @@ export const drawParticlesFS = ``+glsl`
     uniform vec4 uRepulsionColor;
     uniform vec4 uAttractionColor;
     uniform float uColorWeight;
+    uniform float uAttractionStrength;
+    uniform float uRepulsionStrength;
 
     varying vec2 vTexCoord;
 
@@ -290,11 +293,10 @@ export const drawParticlesFS = ``+glsl`
     void main() {
         vec4 testColor = texture2D(uColorTexture,vTexCoord);
         //slightly weight it towards repulsors, since they're visually less dominant w/ particles moving away from them
-        float val = testColor.b/(uColorWeight*testColor.a);
+        float val = (testColor.b)/(uColorWeight*testColor.a);
         vec4 color = mix(uRepulsionColor,uAttractionColor,val*val);
         color.a = 1.0;
         gl_FragColor = color;
-        // gl_FragColor = testColor;
     }
 `;
 
