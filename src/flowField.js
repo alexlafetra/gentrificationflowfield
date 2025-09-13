@@ -10,15 +10,13 @@ import { createProgramFromSources } from "./utils/webGLUtils.js";
 export class FlowField{
     constructor(settings,params){
         //settings
-        this.p5Ref = params.current.p5Ref;
-        this.mainCanvas = params.current.mainCanvas;
-        this.gl = params.current.gl;
-        this.holcTexture = params.current.holcTexture;
-        this.presetFlowMask = params.current.presetFlowMask;
-        this.tractOutlines = params.current.tractOutlines;
-        this.presets = params.current.presets;
-
-        this.params = params;
+        this.p5Ref = params.p5Ref;
+        this.mainCanvas = params.mainCanvas;
+        this.gl = params.gl;
+        this.holcTexture = params.holcTexture;
+        this.presetFlowMask = params.presetFlowMask;
+        this.tractOutlines = params.tractOutlines;
+        this.presets = params.presets;
 
         this.NUMBER_OF_ATTRACTORS = 0;
         this.NUMBER_OF_REPULSORS = 0;
@@ -59,8 +57,8 @@ export class FlowField{
         this.renderFBO_buffer = this.p5Ref.createFramebuffer({width:settings.canvasSize,height:settings.canvasSize,format:this.p5Ref.FLOAT,depth:false});
         this.nodeTexture = this.p5Ref.createFramebuffer({width:this.mainCanvas.width,height:this.mainCanvas.height,textureFiltering:this.p5Ref.NEAREST,depth:false});//the nodes are drawn to this FBO, so they don't need to be redrawn each frame
         
-        this.loadNodes(this.presets[this.params.current.currentPreset].nodes,settings);
-        this.updateFlow(settings);
+        this.loadNodes(this.presets[params.currentPreset].nodes,settings,params);
+        this.updateFlow(settings,params);
 
         //this is a goofy ass workaround
         //but you need to render a texture once in order to pass it to webGL
@@ -73,7 +71,7 @@ export class FlowField{
         //get the shader uniform locations so you can pass particle data in
         this.initGL(settings);
         //move the particle mask to the correct view
-        this.updateParticleMask();
+        this.updateParticleMask(params);
         //Initialize particle vel/positions w/ random noise
         this.resetParticles(settings);
         this.updateParticleData(settings);
@@ -99,16 +97,17 @@ export class FlowField{
     }
     //updates the particle mask, the HOLC tract outlines, and the census outlines
     //by translating and scaling their source png's
-    updateParticleMask(){
+    updateParticleMask(params){
         this.particleMask.begin();
         this.p5Ref.background(0);
-        this.renderTransformedImage(this.presetFlowMask)
+        this.renderTransformedImage(this.presetFlowMask,params)
         this.particleMask.end();
     }
-    renderTransformedImage(img,sf = this.mainCanvas.width*2/5){
-        const rS = (this.params.current.scale.x/sf);//relative scale, bc the png is scaled already
-        const dx = -3*this.mainCanvas.width/4*rS+this.params.current.offset.x;
-        const dy = -3*this.mainCanvas.height/4*rS+this.params.current.offset.y;
+    renderTransformedImage(img,params,sf = this.mainCanvas.width*2/5){
+        const rS = (params.scale.x/(this.mainCanvas.width*2/5));//relative scale, bc the png is scaled already
+        // const rS = (this.params.current.scale.x/sf);//relative scale, bc the png is scaled already
+        const dx = -3*this.mainCanvas.width/4*rS+params.offset.x;
+        const dy = -3*this.mainCanvas.height/4*rS+params.offset.y;
         /*
             these ^^ are the condensed versions of: -mainCanvas.width/2*rS+offset.x-mainCanvas.width/4*rS
             Which is basically centering the image on the webGL canvas, scaling that centering by the image scale
@@ -123,14 +122,14 @@ export class FlowField{
         this.p5Ref.image(img,dx,dy,dw,dh,
                 sx,sy,sw,sh);
     }
-    renderNodes(settings){
+    renderNodes(settings,params){
         this.nodeTexture.begin();
         this.p5Ref.clear();
         let trueMin = this.nodes[0].strength;
         let trueMax = this.nodes[this.nodes.length-1].strength;
         for(let node of this.nodes){
-            const x = node.x*this.params.current.scale.x+this.params.current.offset.x;
-            const y = -node.y*this.params.current.scale.x+this.params.current.offset.y;
+            const x = node.x*params.scale.x+params.offset.x;
+            const y = -node.y*params.scale.x+params.offset.y;
             const force = this.p5Ref.map(node.strength,trueMin+0.3,trueMax-0.3,0,5);
             // if(force<2)
             //     continue;
@@ -140,7 +139,7 @@ export class FlowField{
         }
         this.nodeTexture.end();
     }
-    loadNodes(nodes,settings){
+    loadNodes(nodes,settings,params){
         //sort nodes by strength
         nodes.sort((a,b) => {
             if(a.strength>b.strength)
@@ -189,9 +188,9 @@ export class FlowField{
             this.attractorArray.push(s);
             this.NUMBER_OF_ATTRACTORS++;
         }
-        this.renderNodes(settings);
+        this.renderNodes(settings,params);
     }
-    updateFlow(settings){
+    updateFlow(settings,params){
         const newShader = createFlowFieldShader(this.NUMBER_OF_ATTRACTORS,this.NUMBER_OF_REPULSORS);
         this.calcFlowFieldShader = this.p5Ref.createShader(newShader.vertexShader,newShader.fragmentShader);
         //ANY drawing to this texture will affect the flow field data
@@ -201,17 +200,17 @@ export class FlowField{
         this.p5Ref.shader(this.calcFlowFieldShader);
         //just a note: attractors and repulsors are FLAT arrays of x,y,strength values
         //Which means they're just a 1x(nx3) flat vector, not an nx3 multidimensional vector
-        this.calcFlowFieldShader.setUniform('uCoordinateOffset',[this.params.current.offset.x/this.mainCanvas.width+0.5,this.params.current.offset.y/this.mainCanvas.height+0.5]);//adjusting coordinate so they're between 0,1 (instead of -width/2,+width/2)
-        this.calcFlowFieldShader.setUniform('uScale',this.params.current.scale.x);
+        this.calcFlowFieldShader.setUniform('uCoordinateOffset',[params.offset.x/params.mainCanvas.width+0.5,params.offset.y/params.mainCanvas.height+0.5]);//adjusting coordinate so they're between 0,1 (instead of -width/2,+width/2)
+        this.calcFlowFieldShader.setUniform('uScale',params.scale.x);
         this.calcFlowFieldShader.setUniform('uDimensions',this.mainCanvas.width);
         this.calcFlowFieldShader.setUniform('uAttractors',this.attractorArray);
         this.calcFlowFieldShader.setUniform('uRepulsors',this.repulsorArray);
         this.calcFlowFieldShader.setUniform('uClipAlphaChannel',false);
         this.p5Ref.rect(-this.flowFieldTexture.width/2,-this.flowFieldTexture.height/2,this.flowFieldTexture.width,this.flowFieldTexture.height);
         this.flowFieldTexture.end();
-        this.updateFlowMagnitude(settings);
+        this.updateFlowMagnitude(settings,params);
     }
-    updateFlowMagnitude(settings){
+    updateFlowMagnitude(settings,params){
         const newShader = createFlowMagnitudeShader(this.NUMBER_OF_ATTRACTORS,this.NUMBER_OF_REPULSORS);
         this.calcFlowMagShader = this.p5Ref.createShader(newShader.vertexShader,newShader.fragmentShader);
         this.flowMagnitudeTexture.begin();
@@ -219,8 +218,8 @@ export class FlowField{
         this.p5Ref.clear();
         //just a note: attractors and repulsors are FLAT arrays of x,y,strength values
         //Which means they're just a 1x(nx3) flat vector, not an nx3 multidimensional vector
-        this.calcFlowMagShader.setUniform('uCoordinateOffset',[this.params.current.offset.x/this.mainCanvas.width+0.5,this.params.current.offset.y/this.mainCanvas.height+0.5]);//adjusting coordinate so they're between 0,1 (instead of -width/2,+width/2)
-        this.calcFlowMagShader.setUniform('uScale',this.params.current.scale.x);
+        this.calcFlowMagShader.setUniform('uCoordinateOffset',[params.offset.x/this.mainCanvas.width+0.5,params.offset.y/this.mainCanvas.height+0.5]);//adjusting coordinate so they're between 0,1 (instead of -width/2,+width/2)
+        this.calcFlowMagShader.setUniform('uScale',params.scale.x);
         this.calcFlowMagShader.setUniform('uDimensions',this.mainCanvas.width);
         this.calcFlowMagShader.setUniform('uAttractors',this.attractorArray);
         this.calcFlowMagShader.setUniform('uRepulsors',this.repulsorArray);
@@ -303,7 +302,7 @@ export class FlowField{
         return program;
     }
 
-    renderParticles(settings){
+    renderParticles(settings,params){
 
         const shader = this.rawParticleShader;
         const repColor = new Float32Array([settings.repulsionColor[0]/255.0,settings.repulsionColor[1]/255.0,settings.repulsionColor[2]/255.0,1.0]);
@@ -339,7 +338,6 @@ export class FlowField{
         gl.bindTexture(gl.TEXTURE_2D, this.particleDataTexture.colorTexture);
         
         gl.activeTexture(gl.TEXTURE1);
-        // gl.bindTexture(gl.TEXTURE_2D, this.flowFieldTexture.colorTexture);
         gl.bindTexture(gl.TEXTURE_2D, this.flowMagnitudeTexture.colorTexture);
 
         gl.uniform1i(gl.getUniformLocation(shader,'uDataTexture'),0);
@@ -353,7 +351,7 @@ export class FlowField{
         gl.uniform1f(gl.getUniformLocation(shader,'uColorWeight'),settings.colorWeight);
         gl.uniform1f(gl.getUniformLocation(shader,'uParticleSize'),settings.particleSize);
         gl.uniform2fv(gl.getUniformLocation(shader,'uTextureDimensions'),new Float32Array([settings.dataTextureDimension,settings.dataTextureDimension]));
-
+        gl.uniform2fv(gl.getUniformLocation(shader,'uTextureDimensions'),new Float32Array([params.scale.x,params.scale.y]));
         //rendering
         gl.drawArrays(gl.POINTS,0,settings.particleCount);
         gl.bindFramebuffer(gl.FRAMEBUFFER, null);
@@ -371,45 +369,46 @@ export class FlowField{
         //swap the buffer FBO and the rendering FBO
         [this.renderFBO_buffer,this.renderFBO] = [this.renderFBO,this.renderFBO_buffer];
         //draw the render FBO to the canvas
-        this.renderTransformedImage(this.renderFBO);
-        // this.p5Ref.image(this.renderFBO,-this.mainCanvas.width/2,-this.mainCanvas.height/2,this.mainCanvas.width,this.mainCanvas.height);
+        this.renderTransformedImage(this.renderFBO,params);
     }
     renderData(settings){
-        const yStart = -height/2;
+        const yStart = -this.p5Ref.height/2;
+        const dataSize = this.p5Ref.height/4;
         this.p5Ref.fill(0,0,0);
-        this.p5Ref.rect(-width/2,yStart,settings.dataSize,2*settings.dataSize);
+        this.p5Ref.rect(-this.p5Ref.width/2,yStart,dataSize,2*dataSize);
         this.p5Ref.fill(0,100,255);
-        this.p5Ref.rect(-width/2,yStart+settings.dataSize*2,settings.dataSize,settings.dataSize)
-        this.p5Ref.image(this.flowFieldTexture,-width/2,yStart,settings.dataSize,settings.dataSize);
-        this.p5Ref.image(this.flowMagnitudeTexture,-width/2,yStart+1*settings.dataSize,settings.dataSize,settings.dataSize);
-        this.p5Ref.image(this.particleDataTexture,-width/2,yStart+2*settings.dataSize,settings.dataSize,settings.dataSize);
+        this.p5Ref.rect(-this.p5Ref.width/2,yStart+dataSize*2,dataSize,dataSize)
+        this.p5Ref.image(this.flowFieldTexture,-this.p5Ref.width/2,yStart,dataSize,dataSize);
+        this.p5Ref.image(this.flowMagnitudeTexture,-this.p5Ref.width/2,yStart+1*dataSize,dataSize,dataSize);
+        this.p5Ref.image(this.particleDataTexture,-this.p5Ref.width/2,yStart+2*dataSize,dataSize,dataSize);
     }
-    render(settings){
+    render(settings,params){
         this.p5Ref.background(settings.backgroundColor);
         if(settings.renderCensusTracts)
-            this.renderTransformedImage(this.tractOutlines);
+            this.renderTransformedImage(this.tractOutlines,params);
         if(settings.renderHOLCTracts)
-            this.renderTransformedImage(this.holcTexture);
+            this.renderTransformedImage(this.holcTexture,params);
         if(settings.renderNodes)
-            this.renderTransformedImage(this.nodeTexture);
+            this.renderTransformedImage(this.nodeTexture,params);
         if(settings.renderBigFlowField){
             this.p5Ref.background(0);
             this.p5Ref.image(this.flowFieldTexture,-this.p5Ref.width/2,-this.p5Ref.height/2,this.p5Ref.width,this.p5Ref.height);
         }
+        // this.renderTransformedImage(this.flowMagnitudeTexture);
         if(settings.renderParticles)
-            this.renderParticles(settings);
+            this.renderParticles(settings,params);
         if(settings.renderFlowFieldDataTexture)
             this.renderData(settings);
 
     }
-    updateParticles(settings){
-        this.updateParticleData(settings);
-        this.updateParticleAges(settings);
+    updateParticles(settings,params){
+        this.updateParticleData(settings,params);
+        this.updateParticleAges(settings,params);
     }
-    run(settings){
+    run(settings,params){
         if(settings.isActive){
-            this.updateParticles(settings);
-            this.render(settings);
+            this.updateParticles(settings,params);
+            this.render(settings,params);
         }
     }
 }
