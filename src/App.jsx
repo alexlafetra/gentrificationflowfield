@@ -115,9 +115,9 @@ function App() {
         simulationParams.current.geoOffset = {x:-samplePoint[0],y:-samplePoint[1]};
       }
       else{
-        simulationParams.current.presetFlowMask = await p.loadImage("data/prerendered/flowFieldMask.png");
-        simulationParams.current.tractOutlines = await p.loadImage("data/prerendered/censusTractOutlines.png");
-        simulationParams.current.holcTexture = await p.loadImage("data/prerendered/HOLCTractOutlines.png");
+        simulationParams.current.presetFlowMask = await p.loadImage("./prerendered/flowFieldMask.png");
+        simulationParams.current.tractOutlines = await p.loadImage("./prerendered/censusTractOutlines.png");
+        simulationParams.current.holcTexture = await p.loadImage("./prerendered/HOLCTractOutlines.png");
 
       }
       //the manual offset
