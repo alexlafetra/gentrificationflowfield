@@ -12,58 +12,6 @@ To render tract+mask textures:
 set canvas size (mainCanvas) to 1000x1000
 
 */
-
-let flowField,flowField2;
-let holcTexture;
-let tractOutlines;
-let presetFlowMask;
-
-let gl;
-let mainCanvas;
-const dataTextureDimension = 200;
-
-//Presets
-let censusDataPresets;
-
-//controls whether or not the sim will load with prerendered data/choropleths
-//or with the full dataset, allowing you to explore/experiment
-// let devMode = true;
-let devMode = false;
-
-const defaultSettings = {
-    backgroundColor: [255,255,255],
-    particleCount : 40000,
-    // particleCount : 900,
-    trailDecayValue : 0.04,
-    particleSize : 1.4,
-    // particleSize : 6.0,
-    particleAgeLimit : 1,//this*100 ==> how many frames particles live for
-    framesBeforeLoop : 60,
-    particleVelocity : 0.01,
-    flowInfluence : 1.0,
-    randomMagnitude : 0.0,
-    repulsionStrength : 1.6,
-    attractionStrength : 1,
-    // canvasSize : 800,
-    canvasSize : 1080,//big canvas
-    dataCanvasSize : 400,
-    // useParticleMask : false,
-    useParticleMask : true, //for preventing particles from entering oceans
-    isActive : true,
-    renderFlowFieldDataTexture : false,
-    renderCensusTracts: true,
-    renderNodes : true,
-    renderParticles:true,
-    renderBigFlowField:false,
-    repulsionColor : [20,0,180],
-    attractionColor : [255,0,120],
-    mouseInteraction : false,
-    colorWeight: 1.6
-};
-
-// const defaultSettings = {backgroundColor:[255,0,0],particleCount:40000,trailDecayValue:0.017,particleSize:1,particleAgeLimit:1,framesBeforeLoop:60,particleVelocity:0.024,flowInfluence:1,randomMagnitude:1.11,repulsionStrength:0.411,attractionStrength:0.306,canvasSize:1080,dataSize:200,useParticleMask:true,isActive:true,renderFlowFieldDataTexture:true,renderCensusTracts:false,renderNodes:true,renderParticles:true,renderBigFlowField:false,repulsionColor:[0,64,255,255],attractionColor:[0,255,30,255],mouseInteraction:false,colorWeight:2.05,renderHOLCTracts:false};
-// const defaultSettings = {backgroundColor:[0,0,0],particleCount:40000,trailDecayValue:0.046,particleSize:2.3,particleAgeLimit:1,framesBeforeLoop:60,particleVelocity:0.054,flowInfluence:1,randomMagnitude:0.49,repulsionStrength:0.411,attractionStrength:0.306,canvasSize:1080,dataSize:200,useParticleMask:true,isActive:true,renderFlowFieldDataTexture:true,renderCensusTracts:false,renderNodes:true,renderParticles:true,renderBigFlowField:false,repulsionColor:[255,0,0,255],attractionColor:[0,85,255,255],mouseInteraction:false,colorWeight:2.05,renderHOLCTracts:false};
-
 export const viewPresets = [
     {
         name: "Entire Bay Area",

@@ -26,9 +26,9 @@ function App() {
     devMode : false,
     dataTextureDimension : 200,
     backgroundColor : [255,255,255],
-    particleCount : 10000,
+    particleCount : 40000,
     trailDecayValue : 0.1,
-    particleSize : 1.6,
+    particleSize : 0.1,
     particleAgeLimit : 1,
     framesBeforeLoop : 100,
     particleVelocity : 0.01,
@@ -36,7 +36,7 @@ function App() {
     randomMagnitude : 0.0,
     repulsionStrength : 0.8,
     attractionStrength : 0.5,
-    canvasSize : 800,
+    canvasSize : 600,
     // canvasSize : 100,
     useParticleMask : true, //for preventing particles from entering oceans
     isActive : true,
@@ -104,7 +104,7 @@ function App() {
       //create canvas and grab webGL context
       simulationParams.current.mainCanvas = p.createCanvas(UISettingsRef.current.canvasSize,UISettingsRef.current.canvasSize,p.WEBGL);
       simulationParams.current.gl = simulationParams.current.mainCanvas.GL;
-      p.pixelDensity(1);
+      // p.pixelDensity(1);
       if(UISettingsRef.current.devMode){
         console.log("creating presets...");
         createPresets();
@@ -181,25 +181,26 @@ function App() {
             <Checkbox label = "Plot Textures" callback = {(val) => {setUISettings({...UISettingsRef.current,renderFlowFieldDataTexture:(!UISettingsRef.current.renderFlowFieldDataTexture)})}} value = {UISettings.renderFlowFieldDataTexture}></Checkbox>
           </div>
           <div className = "ui_colorpickers">
+            <ColorPicker label = "Background" callback = {(rgb) => {setUISettings({...UISettingsRef.current,backgroundColor:rgb})}} value = {UISettings.backgroundColor}></ColorPicker>
             <ColorPicker label = "Attractors" callback = {(rgb) => {setUISettings({...UISettingsRef.current,attractionColor:rgb})}} value = {UISettings.attractionColor}></ColorPicker>
             <ColorPicker label = "Repulsors" callback = {(rgb) => {setUISettings({...UISettingsRef.current,repulsionColor:rgb})}} value = {UISettings.repulsionColor}></ColorPicker>
           </div>
           <div className = "ui_dropdowns">
             <Dropdown label = 'Source Data' callback = {(val) => {
-              setCurrentDataPreset({title:val,chartEquation:simulationParams.current.presets[simulationParams.current.currentPreset].chartEquation});
               simulationParams.current.currentPreset = simulationParams.current.presets.findIndex(preset => preset.title === val);
-              flowField.current.loadNodes(simulationParams.current.presets[simulationParams.current.currentPreset].nodes,UISettingsRef.current);
-              flowField.current.updateFlow(UISettingsRef.current);
+              setCurrentDataPreset({title:val,chartEquation:simulationParams.current.presets[simulationParams.current.currentPreset].chartEquation});
+              flowField.current.loadNodes(simulationParams.current.presets[simulationParams.current.currentPreset].nodes,UISettingsRef.current,simulationParams.current);
+              flowField.current.updateFlow(UISettingsRef.current,simulationParams.current);
             }} value = {currentDataPreset.title} options = {simulationParams.current.presets.map((preset) => preset.title)}></Dropdown>
             <Dropdown label = 'Set View' callback = {(val) => {
               setCurrentViewPresetTitle(val);
               simulationParams.current.currentViewPreset = simulationParams.current.viewPresets.findIndex(preset => preset.name === val);
               simulationParams.current.offset = {x:simulationParams.current.viewPresets[simulationParams.current.currentViewPreset].x,y:simulationParams.current.viewPresets[simulationParams.current.currentViewPreset].y};
               simulationParams.current.scale = {x:simulationParams.current.viewPresets[simulationParams.current.currentViewPreset].scale,y:simulationParams.current.viewPresets[simulationParams.current.currentViewPreset].scale};
-              flowField.current.updateParticleMask();
-              flowField.current.updateFlow(UISettingsRef.current);
-              flowField.current.resetParticles(UISettingsRef.current);
-              flowField.current.renderNodes(UISettingsRef.current);
+              flowField.current.updateParticleMask(simulationParams.current);
+              flowField.current.updateFlow(UISettingsRef.current,simulationParams.current,simulationParams.current);
+              flowField.current.resetParticles(UISettingsRef.current,simulationParams.current,simulationParams.current);
+              flowField.current.loadNodes(simulationParams.current.presets[simulationParams.current.currentPreset].nodes,UISettingsRef.current,simulationParams.current);
             }} value = {currentViewPresetTitle} options = {simulationParams.current.viewPresets.map((preset) => preset.name)}></Dropdown>
           </div>
         </div>

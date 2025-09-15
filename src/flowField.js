@@ -11,8 +11,6 @@ export class FlowField{
     constructor(settings,params){
         //settings
         this.p5Ref = params.p5Ref;
-        this.mainCanvas = params.mainCanvas;
-        this.gl = params.gl;
         this.holcTexture = params.holcTexture;
         this.presetFlowMask = params.presetFlowMask;
         this.tractOutlines = params.tractOutlines;
@@ -47,7 +45,7 @@ export class FlowField{
         this.particleDataTextureBuffer = this.p5Ref.createFramebuffer({width:settings.dataTextureDimension,height:settings.dataTextureDimension,format:this.p5Ref.FLOAT,textureFiltering:this.p5Ref.NEAREST,depth:false});
         this.flowFieldTexture = this.p5Ref.createFramebuffer({width:settings.canvasSize,height:settings.canvasSize,format:this.p5Ref.FLOAT,textureFiltering:this.p5Ref.NEAREST,depth:false});//holds the flowfield data attraction = (r,g) ; repulsion = (b,a)
         this.flowMagnitudeTexture = this.p5Ref.createFramebuffer({width:settings.canvasSize,height:settings.canvasSize,format:this.p5Ref.FLOAT,textureFiltering:this.p5Ref.NEAREST,depth:false});//holds the magnitude of attraction (r) and repulsion (b) forces
-        this.particleMask = this.p5Ref.createFramebuffer({width:this.mainCanvas.width,height:this.mainCanvas.height,depth:false});//holds the particle mask data (white is tracts w/people in them, black is empty tracts)
+        this.particleMask = this.p5Ref.createFramebuffer({width:params.mainCanvas.width,height:params.mainCanvas.height,depth:false});//holds the particle mask data (white is tracts w/people in them, black is empty tracts)
         //not super necessary, but makes it so particles return to their starting position (lets you make seamless looping gifs)
         this.initialStartingPositions = this.p5Ref.createFramebuffer({width:settings.dataTextureDimension,height:settings.dataTextureDimension,format:this.p5Ref.FLOAT,textureFiltering:this.p5Ref.NEAREST,depth:false});
 
@@ -55,18 +53,10 @@ export class FlowField{
         this.particleCanvas = this.p5Ref.createFramebuffer({width:settings.canvasSize,height:settings.canvasSize,format:this.p5Ref.FLOAT,depth:false});
         this.renderFBO = this.p5Ref.createFramebuffer({width:settings.canvasSize,height:settings.canvasSize,format:this.p5Ref.FLOAT,depth:false});
         this.renderFBO_buffer = this.p5Ref.createFramebuffer({width:settings.canvasSize,height:settings.canvasSize,format:this.p5Ref.FLOAT,depth:false});
-        this.nodeTexture = this.p5Ref.createFramebuffer({width:this.mainCanvas.width,height:this.mainCanvas.height,textureFiltering:this.p5Ref.NEAREST,depth:false});//the nodes are drawn to this FBO, so they don't need to be redrawn each frame
+        this.nodeTexture = this.p5Ref.createFramebuffer({width:params.mainCanvas.width,height:params.mainCanvas.height,textureFiltering:this.p5Ref.NEAREST,depth:false});//the nodes are drawn to this FBO, so they don't need to be redrawn each frame
         
         this.loadNodes(this.presets[params.currentPreset].nodes,settings,params);
         this.updateFlow(settings,params);
-
-        //this is a goofy ass workaround
-        //but you need to render a texture once in order to pass it to webGL
-        this.p5Ref.push();
-        this.p5Ref.clear();
-        this.p5Ref.texture(this.flowMagnitudeTexture);
-        this.p5Ref.plane(1,1);
-        this.p5Ref.pop();
 
         //get the shader uniform locations so you can pass particle data in
         this.initGL(settings);
@@ -103,18 +93,18 @@ export class FlowField{
         this.renderTransformedImage(this.presetFlowMask,params)
         this.particleMask.end();
     }
-    renderTransformedImage(img,params,sf = this.mainCanvas.width*2/5){
-        const rS = (params.scale.x/(this.mainCanvas.width*2/5));//relative scale, bc the png is scaled already
-        // const rS = (this.params.current.scale.x/sf);//relative scale, bc the png is scaled already
-        const dx = -3*this.mainCanvas.width/4*rS+params.offset.x;
-        const dy = -3*this.mainCanvas.height/4*rS+params.offset.y;
+    renderTransformedImage(img,params){
+        const sf = params.mainCanvas.width*2/5;
+        const rS = (params.scale.x/sf);//relative scale, bc the png is scaled already
+        const dx = -3*params.mainCanvas.width/4*rS+params.offset.x;
+        const dy = -3*params.mainCanvas.height/4*rS+params.offset.y;
         /*
             these ^^ are the condensed versions of: -mainCanvas.width/2*rS+offset.x-mainCanvas.width/4*rS
             Which is basically centering the image on the webGL canvas, scaling that centering by the image scale
             Adding the offset, then subtracting the starting offset (bc the png is already offset)
         */
-        const dw = (this.mainCanvas.width)*rS;
-        const dh = (this.mainCanvas.height)*rS;
+        const dw = (params.mainCanvas.width)*rS;
+        const dh = (params.mainCanvas.height)*rS;
         const sx = 0;
         const sy = 0;
         const sw = img.width;
@@ -139,8 +129,14 @@ export class FlowField{
         }
         this.nodeTexture.end();
     }
+    isInView(point,params){
+        const x = point.x*params.scale.x+params.offset.x;
+        const y = point.y*params.scale.y+params.offset.y;
+        if((x > (-params.mainCanvas.width/2)) && (x < (params.mainCanvas.width/2)) && (y > (-params.mainCanvas.height/2)) && (y < (params.mainCanvas.height/2)))
+            return true;
+        else return false;
+    }
     loadNodes(nodes,settings,params){
-        //sort nodes by strength
         nodes.sort((a,b) => {
             if(a.strength>b.strength)
                 return 1;
@@ -202,7 +198,7 @@ export class FlowField{
         //Which means they're just a 1x(nx3) flat vector, not an nx3 multidimensional vector
         this.calcFlowFieldShader.setUniform('uCoordinateOffset',[params.offset.x/params.mainCanvas.width+0.5,params.offset.y/params.mainCanvas.height+0.5]);//adjusting coordinate so they're between 0,1 (instead of -width/2,+width/2)
         this.calcFlowFieldShader.setUniform('uScale',params.scale.x);
-        this.calcFlowFieldShader.setUniform('uDimensions',this.mainCanvas.width);
+        this.calcFlowFieldShader.setUniform('uDimensions',params.mainCanvas.width);
         this.calcFlowFieldShader.setUniform('uAttractors',this.attractorArray);
         this.calcFlowFieldShader.setUniform('uRepulsors',this.repulsorArray);
         this.calcFlowFieldShader.setUniform('uClipAlphaChannel',false);
@@ -218,13 +214,21 @@ export class FlowField{
         this.p5Ref.clear();
         //just a note: attractors and repulsors are FLAT arrays of x,y,strength values
         //Which means they're just a 1x(nx3) flat vector, not an nx3 multidimensional vector
-        this.calcFlowMagShader.setUniform('uCoordinateOffset',[params.offset.x/this.mainCanvas.width+0.5,params.offset.y/this.mainCanvas.height+0.5]);//adjusting coordinate so they're between 0,1 (instead of -width/2,+width/2)
+        this.calcFlowMagShader.setUniform('uCoordinateOffset',[params.offset.x/params.mainCanvas.width+0.5,params.offset.y/params.mainCanvas.height+0.5]);//adjusting coordinate so they're between 0,1 (instead of -width/2,+width/2)
         this.calcFlowMagShader.setUniform('uScale',params.scale.x);
-        this.calcFlowMagShader.setUniform('uDimensions',this.mainCanvas.width);
+        this.calcFlowMagShader.setUniform('uDimensions',params.mainCanvas.width);
         this.calcFlowMagShader.setUniform('uAttractors',this.attractorArray);
         this.calcFlowMagShader.setUniform('uRepulsors',this.repulsorArray);
         this.p5Ref.rect(-this.flowMagnitudeTexture.width/2,-this.flowMagnitudeTexture.height/2,this.flowMagnitudeTexture.width,this.flowMagnitudeTexture.height);
         this.flowMagnitudeTexture.end();
+
+        //this is a goofy ass workaround
+        //but you need to render a texture once in order to pass it to webGL
+        this.p5Ref.push();
+        this.p5Ref.clear();
+        this.p5Ref.texture(this.flowMagnitudeTexture);
+        this.p5Ref.plane(1,1);
+        this.p5Ref.pop();
     }
     updateParticleData(settings){
         this.particleDataTextureBuffer.begin();
@@ -351,7 +355,7 @@ export class FlowField{
         gl.uniform1f(gl.getUniformLocation(shader,'uColorWeight'),settings.colorWeight);
         gl.uniform1f(gl.getUniformLocation(shader,'uParticleSize'),settings.particleSize);
         gl.uniform2fv(gl.getUniformLocation(shader,'uTextureDimensions'),new Float32Array([settings.dataTextureDimension,settings.dataTextureDimension]));
-        gl.uniform2fv(gl.getUniformLocation(shader,'uTextureDimensions'),new Float32Array([params.scale.x,params.scale.y]));
+        gl.uniform2fv(gl.getUniformLocation(shader,'uScale'),new Float32Array([params.scale.x,params.scale.x]));
         //rendering
         gl.drawArrays(gl.POINTS,0,settings.particleCount);
         gl.bindFramebuffer(gl.FRAMEBUFFER, null);
@@ -369,7 +373,7 @@ export class FlowField{
         //swap the buffer FBO and the rendering FBO
         [this.renderFBO_buffer,this.renderFBO] = [this.renderFBO,this.renderFBO_buffer];
         //draw the render FBO to the canvas
-        this.renderTransformedImage(this.renderFBO,params);
+        this.p5Ref.image(this.renderFBO,-this.p5Ref.width/2,-this.p5Ref.height/2,this.p5Ref.width,this.p5Ref.height);
     }
     renderData(settings){
         const yStart = -this.p5Ref.height/2;
@@ -389,12 +393,13 @@ export class FlowField{
         if(settings.renderHOLCTracts)
             this.renderTransformedImage(this.holcTexture,params);
         if(settings.renderNodes)
-            this.renderTransformedImage(this.nodeTexture,params);
+            this.p5Ref.image(this.nodeTexture,-this.p5Ref.width/2,-this.p5Ref.height/2,this.p5Ref.width,this.p5Ref.height);
+            // this.renderTransformedImage(this.nodeTexture,params);
         if(settings.renderBigFlowField){
             this.p5Ref.background(0);
             this.p5Ref.image(this.flowFieldTexture,-this.p5Ref.width/2,-this.p5Ref.height/2,this.p5Ref.width,this.p5Ref.height);
         }
-        // this.renderTransformedImage(this.flowMagnitudeTexture);
+        // this.renderTransformedImage(this.flowMagnitudeTexture,params);
         if(settings.renderParticles)
             this.renderParticles(settings,params);
         if(settings.renderFlowFieldDataTexture)

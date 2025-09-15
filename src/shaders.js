@@ -269,7 +269,7 @@ export const drawParticlesVS = ``+glsl`
     void main() {
         // pull the position from the texture
         vec4 position = getValueFrom2DTextureAs1DArray(uDataTexture, uTextureDimensions, particleID);
-        vTexCoord = position.xy*uScale;
+        vTexCoord = position.xy;
         gl_Position = vec4(position.xy,1.0,1.0) - vec4(0.5);
         gl_PointSize = uParticleSize;
     }
@@ -294,9 +294,10 @@ export const drawParticlesFS = ``+glsl`
     void main() {
         vec4 testColor = texture2D(uColorTexture,vTexCoord);
         //slightly weight it towards repulsors, since they're visually less dominant w/ particles moving away from them
-        float val = (uRepulsionStrength*testColor.b)/(uAttractionStrength*testColor.a) * uColorWeight;
-        vec4 color = mix(uAttractionColor,uRepulsionColor,val*val);
+        float val = (uColorWeight*uAttractionStrength*testColor.r)/(uRepulsionStrength*testColor.b);
+        vec4 color = mix(uRepulsionColor,uAttractionColor,val*val);
         color.a = 1.0;
+        testColor.a = 1.0;
         gl_FragColor = color;
     }
 `;
